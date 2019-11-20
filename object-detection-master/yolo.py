@@ -247,3 +247,5 @@ for filename_left in left_file_list:
 
             # stop the timer and convert to ms. (to see how long processing and display takes)
             stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
+
+            print(stop_t)
