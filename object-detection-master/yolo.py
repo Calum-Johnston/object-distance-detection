@@ -12,7 +12,7 @@
 # https://pjreddie.com/media/files/papers/YOLOv3.pdf
 
 # To use first download the following files:
-
+    
 # https://pjreddie.com/media/files/yolov3.weights
 # https://github.com/pjreddie/darknet/blob/master/cfg/yolov3.cfg?raw=true
 # https://github.com/pjreddie/darknet/blob/master/data/coco.names?raw=true
