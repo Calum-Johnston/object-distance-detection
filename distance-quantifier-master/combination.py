@@ -319,19 +319,23 @@ for filename_left in left_file_list:
                 top = box[1]
                 width = box[2]
                 height = box[3]
+                right = left + width
+                bottom = top + height
 
                 # Loop through pixels in range 
                 totalDisparity = 0
                 totalCount = 0
-                for y in range(top, top + height):
-                    for x in range(left, left + width):
-                        if(disparity_scaled[y, x] > 0):
-                            totalDisparity += disparity_scaled[y, x]
-                            totalCount += 1
-                averageDisparity = totalDisparity / totalCount
-                averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
-
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, left + width, top + height, (255, 178, 50), averageDistance)
+                for x in range(left, right):
+                    for y in range(top, bottom):
+                        if(y < imgL.shape[0] and x < imgL.shape[1]):
+                            if(disparity_scaled[y, x] > 0):
+                                currentDisparity = disparity_scaled[y, x]
+                                totalDisparity = totalDisparity + currentDisparity
+                                totalCount += 1
+                if(totalCount > 0):
+                    averageDisparity = totalDisparity / totalCount
+                    averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
+                    drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, right, bottom, (255, 178, 50), averageDistance)
 
             # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
             t, _ = net.getPerfProfile()
