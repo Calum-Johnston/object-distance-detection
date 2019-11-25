@@ -51,7 +51,7 @@ def drawPred(image, class_name, confidence, left, top, right, bottom, colour, av
 
     print(avgDist)
     # construct label
-    label = '%s:%.2f (%.2f)' % (class_name, avgDist, confidence)
+    label = '%s:%.2fm (%.2f)' % (class_name, avgDist, confidence)
 
     #Display the label at the top of the bounding box
     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -322,11 +322,13 @@ for filename_left in left_file_list:
 
                 # Loop through pixels in range 
                 totalDisparity = 0
-                for y in range(0, height - 1):
-                    for x in range(0, width - 1):
-                        if(disparity_scaled[top + y, left + x] > 0):
-                            totalDisparity += disparity_scaled[top + y, left + x]
-                averageDisparity = totalDisparity / (height * width)
+                totalCount = 0
+                for y in range(top, top + height):
+                    for x in range(left, left + width):
+                        if(disparity_scaled[y, x] > 0):
+                            totalDisparity += disparity_scaled[y, x]
+                            totalCount += 1
+                averageDisparity = totalDisparity / totalCount
                 averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
 
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, left + width, top + height, (255, 178, 50), averageDistance)
