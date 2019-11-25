@@ -45,12 +45,13 @@ def on_trackbar(val):
 # left, top, right, bottom: rectangle parameters for detection
 # colour: to draw detection rectangle in
 
-def drawPred(image, class_name, confidence, left, top, right, bottom, colour):
+def drawPred(image, class_name, confidence, left, top, right, bottom, colour, avgDist):
     # Draw a bounding box.
     cv2.rectangle(image, (left, top), (right, bottom), colour, 3)
 
+    print(avgDist)
     # construct label
-    label = '%s:%.2f' % (class_name, confidence)
+    label = '%s:%.2f (%.2f)' % (class_name, avgDist, confidence)
 
     #Display the label at the top of the bounding box
     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -189,6 +190,18 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 max_disparity = 128
 stereoProcessor = cv2.StereoSGBM_create(0, max_disparity, 21);
 
+# fixed camera parameters for this stereo setup (from calibration)
+camera_focal_length_px = 399.9745178222656  # focal length in pixels
+camera_focal_length_m = 4.8 / 1000          # focal length in metres (4.8 mm)
+stereo_camera_baseline_m = 0.2090607502     # camera baseline in metres
+
+image_centre_h = 262.0;
+image_centre_w = 474.5;
+
+crop_disparity = False; # display full or cropped disparity image
+pause_playback = False; # pause until key press after each image
+
+
 
 ################################################################################
 # Define display window name + trackbar
@@ -219,8 +232,8 @@ for filename_left in left_file_list:
     print(full_path_filename_right);
     print();
 
-    # check the file is a PNG file (left) and check a correspondoning right image actually exists
     while(cv2.waitKey(1) < 0):
+        # check the file is a PNG file (left) and check a correspondoning right image actually exists
         if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
 
             ################################################################################
@@ -229,7 +242,7 @@ for filename_left in left_file_list:
             # start a timer (to see how long processing and display takes)
             start_t = cv2.getTickCount()
 
-            # create window by name (as resizable)
+            4# create window by name (as resizable)
             cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
 
             # read left and right images
@@ -276,6 +289,9 @@ for filename_left in left_file_list:
             dispNoiseFilter = 5; # increase for more agressive filtering
             cv2.filterSpeckles(disparity, 0, 4000, max_disparity - dispNoiseFilter);
 
+            #Another type of noise filtering:
+            # https://rdmilligan.wordpress.com/2016/05/23/disparity-of-stereo-images-with-python-and-opencv/
+
             # scale the disparity to 8-bit for viewing
             # divide by 16 and convert to 8-bit image (then range of values should
             # be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
@@ -288,7 +304,6 @@ for filename_left in left_file_list:
             # crop disparity to chop out left part where there are with no disparity
             # as this area is not seen by both cameras and also
             # chop out the bottom area (where we see the front of car bonnet)
-            crop_disparity = False
             if (crop_disparity):
                 width = np.size(disparity_scaled, 1);
                 disparity_scaled = disparity_scaled[0:390,135:width];
@@ -304,7 +319,17 @@ for filename_left in left_file_list:
                 top = box[1]
                 width = box[2]
                 height = box[3]
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, left + width, top + height, (255, 178, 50))
+
+                # Loop through pixels in range 
+                totalDisparity = 0
+                for y in range(0, height - 1):
+                    for x in range(0, width - 1):
+                        if(disparity_scaled[top + y, left + x] > 0):
+                            totalDisparity += disparity_scaled[top + y, left + x]
+                averageDisparity = totalDisparity / (height * width)
+                averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
+
+                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, left + width, top + height, (255, 178, 50), averageDistance)
 
             # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
             t, _ = net.getPerfProfile()
@@ -313,10 +338,7 @@ for filename_left in left_file_list:
 
             # display image
             cv2.imshow(windowName,imgL)
-            cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN,
-                                    cv2.WINDOW_FULLSCREEN)
+            cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
 
             # stop the timer and convert to ms. (to see how long processing and display takes)
             stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
-
-            print(stop_t)
