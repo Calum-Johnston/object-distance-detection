@@ -44,7 +44,6 @@ def on_trackbar(val):
 # class_name: string name of detected object_detection
 # box: image parameters for object detection
 # colour: to draw detection rectangle in
-
 def drawPred(image, class_name, confidence, box, colour):
     # Get box coordinates and distance
     left = box[0]
@@ -70,7 +69,8 @@ def drawPred(image, class_name, confidence, box, colour):
 
 #####################################################################
 # Gets the distance of an object  in an image based on the area around it
-
+# disparity_scaled: scaled version of the disparity map
+# box: image parameters for object detection
 def getBoxDistance(disparity_scaled, box):
     left = box[0]
     top = box[1]
@@ -79,7 +79,10 @@ def getBoxDistance(disparity_scaled, box):
     right = left + width
     bottom = top + height
 
-   # Loop through pixels in range 
+    f = camera_focal_length_px
+    B = stereo_camera_baseline_m
+
+    # Loop through pixels in range 
     totalDisparity = 0
     totalCount = 0
     for x in range(left, right):
@@ -91,7 +94,7 @@ def getBoxDistance(disparity_scaled, box):
                     totalCount += 1
     if(totalCount > 0):
         averageDisparity = totalDisparity / totalCount
-        averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
+        averageDistance = (f * B) / averageDisparity
         return averageDistance 
     return 0       
 
@@ -101,7 +104,6 @@ def getBoxDistance(disparity_scaled, box):
 # results: output from YOLO CNN network
 # threshold_confidence: threshold on keeping detection
 # threshold_nms: threshold used in non maximum suppression
-
 def postprocess(image, results, threshold_confidence, threshold_nms):
     frameHeight = image.shape[0]
     frameWidth = image.shape[1]
@@ -153,7 +155,6 @@ def postprocess(image, results, threshold_confidence, threshold_nms):
 ################################################################################
 # Get the names of the output layers of the CNN network
 # net : an OpenCV DNN module network object
-
 def getOutputsNames(net):
     # Get the names of all the layers in the network
     layersNames = net.getLayerNames()
@@ -213,7 +214,7 @@ output_layer_names = getOutputsNames(net)
 net.setPreferableBackend(cv2.dnn.DNN_BACKEND_DEFAULT)
 
 # change to cv2.dnn.DNN_TARGET_CPU (slower) if this causes issues (should fail gracefully if OpenCL not available)
-net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
+net.setPreferableTarget(cv2.dnn.DNN_TARGET_OPENCL)
 
 
 
@@ -351,7 +352,7 @@ for filename_left in left_file_list:
             for detected_object in range(0, len(boxes)):
                 box = boxes[detected_object]
                 box.append(getBoxDistance(disparity_scaled, box))
-            boxes.sort()
+            boxes.sort(key = lambda box: box[4], reverse = True)
             for box in boxes:
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
