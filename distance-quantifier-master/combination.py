@@ -42,16 +42,24 @@ def on_trackbar(val):
 # Draw the predicted bounding box on the specified image
 # image: image detection performed on
 # class_name: string name of detected object_detection
-# left, top, right, bottom: rectangle parameters for detection
+# box: image parameters for object detection
 # colour: to draw detection rectangle in
 
-def drawPred(image, class_name, confidence, left, top, right, bottom, colour, avgDist):
+def drawPred(image, class_name, confidence, box, colour):
+    # Get box coordinates and distance
+    left = box[0]
+    top = box[1]
+    width = box[2]
+    height = box[3]
+    distance = box[4]
+    right = left + width
+    bottom = top + height
+
     # Draw a bounding box.
     cv2.rectangle(image, (left, top), (right, bottom), colour, 3)
 
-    print(avgDist)
     # construct label
-    label = '%s:%.2fm (%.2f)' % (class_name, avgDist, confidence)
+    label = '%s:%.2fm (%.2f)' % (class_name, distance, confidence)
 
     #Display the label at the top of the bounding box
     labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
@@ -59,6 +67,33 @@ def drawPred(image, class_name, confidence, left, top, right, bottom, colour, av
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
     cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+
+#####################################################################
+# Gets the distance of an object  in an image based on the area around it
+
+def getBoxDistance(disparity_scaled, box):
+    left = box[0]
+    top = box[1]
+    width = box[2]
+    height = box[3]
+    right = left + width
+    bottom = top + height
+
+   # Loop through pixels in range 
+    totalDisparity = 0
+    totalCount = 0
+    for x in range(left, right):
+        for y in range(top, bottom):
+            if(y < imgL.shape[0] and x < imgL.shape[1]):
+                if(disparity_scaled[y, x] > 0):
+                    currentDisparity = disparity_scaled[y, x]
+                    totalDisparity = totalDisparity + currentDisparity
+                    totalCount += 1
+    if(totalCount > 0):
+        averageDisparity = totalDisparity / totalCount
+        averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
+        return averageDistance 
+    return 0       
 
 #####################################################################
 # Remove the bounding boxes with low confidence using non-maxima suppression
@@ -312,30 +347,13 @@ for filename_left in left_file_list:
             ################################################################################
             # Resulting Distance Calculations + Drawing
             ################################################################################
-            # draw resulting detections on image
+            # get box distance and draw resulting box on image
             for detected_object in range(0, len(boxes)):
                 box = boxes[detected_object]
-                left = box[0]
-                top = box[1]
-                width = box[2]
-                height = box[3]
-                right = left + width
-                bottom = top + height
-
-                # Loop through pixels in range 
-                totalDisparity = 0
-                totalCount = 0
-                for x in range(left, right):
-                    for y in range(top, bottom):
-                        if(y < imgL.shape[0] and x < imgL.shape[1]):
-                            if(disparity_scaled[y, x] > 0):
-                                currentDisparity = disparity_scaled[y, x]
-                                totalDisparity = totalDisparity + currentDisparity
-                                totalCount += 1
-                if(totalCount > 0):
-                    averageDisparity = totalDisparity / totalCount
-                    averageDistance = (camera_focal_length_px * stereo_camera_baseline_m) / averageDisparity
-                    drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], left, top, right, bottom, (255, 178, 50), averageDistance)
+                box.append(getBoxDistance(disparity_scaled, box))
+            boxes.sort()
+            for box in boxes:
+                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
             # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
             t, _ = net.getPerfProfile()
