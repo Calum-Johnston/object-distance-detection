@@ -2,3 +2,4 @@ https://publik.tuwien.ac.at/files/publik_270028.pdf
 https://www.uio.no/studier/emner/matnat/its/nedlagte-emner/UNIK4690/v16/forelesninger/lecture_6_3_stereo_processing.pdf
 https://docs.opencv.org/3.0-beta/doc/py_tutorials/py_feature2d/py_matcher/py_matcher.html#matcher
 https://www.intechopen.com/online-first/efficient-depth-estimation-using-sparse-stereo-vision-with-other-perception-techniques
+https://duo.dur.ac.uk/bbcswebdav/pid-5456932-dt-content-rid-19749637_2/courses/COMP3381_2019/l3_ssa_cv_assignment2019-20.pdf
