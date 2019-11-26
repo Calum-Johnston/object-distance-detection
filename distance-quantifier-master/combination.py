@@ -46,10 +46,8 @@ def on_trackbar(val):
 # colour: to draw detection rectangle in
 def drawPred(image, class_name, confidence, box, colour):
     # Get box coordinates and distance
-    left = box[0]
-    top = box[1]
-    width = box[2]
-    height = box[3]
+    left = box[0]; top = box[1]
+    width = box[2]; height = box[3]
     distance = box[4]
     right = left + width
     bottom = top + height
@@ -72,19 +70,25 @@ def drawPred(image, class_name, confidence, box, colour):
 # disparity_scaled: scaled version of the disparity map
 # box: image parameters for object detection
 def getBoxDistance(disparity_scaled, box):
-    left = box[0]
-    top = box[1]
-    width = box[2]
-    height = box[3]
+    # Get information about box
+    left = box[0]; top = box[1]
+    width = box[2]; height = box[3]
     right = left + width
     bottom = top + height
 
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
 
-    # Loop through pixels in range 
     totalDisparity = 0
     totalCount = 0
+
+    # Trim the box to hopefully isolate object and reduce background noise
+    right -= int((right - left) * 0.4)
+    left += int((right - left) * 0.4)
+    bottom -= int((bottom - top) * 0.4)
+    top += int((bottom - top) * 0.4)
+
+    # Loops through all box pixels to produce an average disparity
     for x in range(left, right):
         for y in range(top, bottom):
             if(y < imgL.shape[0] and x < imgL.shape[1]):
