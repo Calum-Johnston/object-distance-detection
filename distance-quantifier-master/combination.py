@@ -268,102 +268,107 @@ for filename_left in left_file_list:
     print(full_path_filename_right);
     print();
 
-    while(cv2.waitKey(1) < 0):
-        # check the file is a PNG file (left) and check a correspondoning right image actually exists
-        if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
+    # check the file is a PNG file (left) and check a correspondoning right image actually exists
+    if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
 
-            ################################################################################
-            # Setup of windows, images, timers, etc
-            ################################################################################
-            # start a timer (to see how long processing and display takes)
-            start_t = cv2.getTickCount()
+        ################################################################################
+        # Setup of windows, images, timers, etc
+        ################################################################################
+        # start a timer (to see how long processing and display takes)
+        start_t = cv2.getTickCount()
 
-            4# create window by name (as resizable)
-            cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
+        # create window by name (as resizable)
+        cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
 
-            # read left and right images
-            imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
-            imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
-
-
-            ################################################################################
-            # YOLO Object Detection Calculations + Function Calls
-            ################################################################################
-            # create a 4D tensor (OpenCV 'blob') from image frame (pixels scaled 0->1, image resized)
-            blob = cv2.dnn.blobFromImage(imgL, 1/255, (inpWidth, inpHeight), [0,0,0], 1, crop=False)
-
-            # set the input to the CNN network
-            net.setInput(blob)
-
-            # runs forward inference to get output of the final output layers
-            results = net.forward(output_layer_names)
-
-            # remove the bounding boxes with low confidence
-            confThreshold = cv2.getTrackbarPos(trackbarName,windowName) / 100
-            classIDs, confidences, boxes = postprocess(imgL, results, confThreshold, nmsThreshold)
+        # read left and right images
+        imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
+        imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
 
-            ################################################################################
-            # Stereo Disparity Calculations + Function Calls
-            ################################################################################
-            # remember to convert to grayscale (as the disparity matching works on grayscale)
-            # N.B. need to do for both as both are 3-channel images
-            grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
-            grayR = cv2.cvtColor(imgR,cv2.COLOR_BGR2GRAY);
+        ################################################################################
+        # YOLO Object Detection Calculations + Function Calls
+        ################################################################################
+        # create a 4D tensor (OpenCV 'blob') from image frame (pixels scaled 0->1, image resized)
+        blob = cv2.dnn.blobFromImage(imgL, 1/255, (inpWidth, inpHeight), [0,0,0], 1, crop=False)
 
-            # perform preprocessing - raise to the power, as this subjectively appears
-            # to improve subsequent disparity calculation
-            grayL = np.power(grayL, 0.75).astype('uint8');
-            grayR = np.power(grayR, 0.75).astype('uint8');
+        # set the input to the CNN network
+        net.setInput(blob)
 
-            # compute disparity image from undistorted and rectified stereo images
-            # that we have loaded
-            # (which for reasons best known to the OpenCV developers is returned scaled by 16)
-            disparity = stereoProcessor.compute(grayL,grayR);
+        # runs forward inference to get output of the final output layers
+        results = net.forward(output_layer_names)
 
-            # filter out noise and speckles (adjust parameters as needed)
-            dispNoiseFilter = 5; # increase for more agressive filtering
-            cv2.filterSpeckles(disparity, 0, 4000, max_disparity - dispNoiseFilter);
-
-            #Another type of noise filtering:
-            # https://rdmilligan.wordpress.com/2016/05/23/disparity-of-stereo-images-with-python-and-opencv/
-
-            # scale the disparity to 8-bit for viewing
-            # divide by 16 and convert to 8-bit image (then range of values should
-            # be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
-            # so we fix this also using a initial threshold between 0 and max_disparity
-            # as disparity=-1 means no disparity available
-
-            _, disparity = cv2.threshold(disparity,0, max_disparity * 16, cv2.THRESH_TOZERO);
-            disparity_scaled = (disparity / 16.).astype(np.uint8);
-
-            # crop disparity to chop out left part where there are with no disparity
-            # as this area is not seen by both cameras and also
-            # chop out the bottom area (where we see the front of car bonnet)
-            if (crop_disparity):
-                width = np.size(disparity_scaled, 1);
-                disparity_scaled = disparity_scaled[0:390,135:width];
+        # remove the bounding boxes with low confidence
+        confThreshold = cv2.getTrackbarPos(trackbarName,windowName) / 100
+        classIDs, confidences, boxes = postprocess(imgL, results, confThreshold, nmsThreshold)
 
 
-            ################################################################################
-            # Resulting Distance Calculations + Drawing
-            ################################################################################
-            # get box distance and draw resulting box on image
-            for detected_object in range(0, len(boxes)):
-                box = boxes[detected_object]
-                box.append(getBoxDistance(disparity_scaled, box))
-            boxes.sort(key = lambda box: box[4], reverse = True)
-            for box in boxes:
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+        ################################################################################
+        # Stereo Disparity Calculations + Function Calls
+        ################################################################################
+        # remember to convert to grayscale (as the disparity matching works on grayscale)
+        # N.B. need to do for both as both are 3-channel images
+        grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
+        grayR = cv2.cvtColor(imgR,cv2.COLOR_BGR2GRAY);
 
-            # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-            t, _ = net.getPerfProfile()
-            label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
-            cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        # perform preprocessing - raise to the power, as this subjectively appears
+        # to improve subsequent disparity calculation
+        grayL = np.power(grayL, 0.75).astype('uint8');
+        grayR = np.power(grayR, 0.75).astype('uint8');
 
-            # display image
-            cv2.imshow(windowName,imgL)
-            cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        # compute disparity image from undistorted and rectified stereo images
+        # that we have loaded
+        # (which for reasons best known to the OpenCV developers is returned scaled by 16)
+        disparity = stereoProcessor.compute(grayL,grayR);
 
-            # stop the timer and convert to ms. (to see how long processing and display takes)
-            stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
+        # filter out noise and speckles (adjust parameters as needed)
+        dispNoiseFilter = 5; # increase for more agressive filtering
+        cv2.filterSpeckles(disparity, 0, 4000, max_disparity - dispNoiseFilter);
+
+        #Another type of noise filtering:
+        # https://rdmilligan.wordpress.com/2016/05/23/disparity-of-stereo-images-with-python-and-opencv/
+
+        # scale the disparity to 8-bit for viewing
+        # divide by 16 and convert to 8-bit image (then range of values should
+        # be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
+        # so we fix this also using a initial threshold between 0 and max_disparity
+        # as disparity=-1 means no disparity available
+
+        _, disparity = cv2.threshold(disparity,0, max_disparity * 16, cv2.THRESH_TOZERO);
+        disparity_scaled = (disparity / 16.).astype(np.uint8);
+
+        # crop disparity to chop out left part where there are with no disparity
+        # as this area is not seen by both cameras and also
+        # chop out the bottom area (where we see the front of car bonnet)
+        if (crop_disparity):
+            width = np.size(disparity_scaled, 1);
+            disparity_scaled = disparity_scaled[0:390,135:width];
+
+
+        ################################################################################
+        # Resulting Distance Calculations + Drawing 
+        ################################################################################
+        # get box distance and draw resulting box on image
+        for detected_object in range(0, len(boxes)):
+            box = boxes[detected_object]
+            box.append(getBoxDistance(disparity_scaled, box))
+        boxes.sort(key = lambda box: box[4], reverse = True)
+        for box in boxes:
+            drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+
+
+       #################################################################################
+        # Output of image
+        ################################################################################
+        # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+        t, _ = net.getPerfProfile()
+        label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
+        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+
+        # display image
+        cv2.imshow(windowName,imgL)
+        cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+
+        # stop the timer and convert to ms. (to see how long processing and display takes)
+        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
+
+        cv2.waitKey()
