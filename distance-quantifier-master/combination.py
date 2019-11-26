@@ -336,12 +336,9 @@ for filename_left in left_file_list:
         _, disparity = cv2.threshold(disparity,0, max_disparity * 16, cv2.THRESH_TOZERO);
         disparity_scaled = (disparity / 16.).astype(np.uint8);
 
-        # crop disparity to chop out left part where there are with no disparity
-        # as this area is not seen by both cameras and also
-        # chop out the bottom area (where we see the front of car bonnet)
-        if (crop_disparity):
-            width = np.size(disparity_scaled, 1);
-            disparity_scaled = disparity_scaled[0:390,135:width];
+        # display image (scaling it to the full 0->255 range based on the number
+        # of disparities in use for the stereo part)
+        disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
 
 
         ################################################################################
@@ -358,9 +355,9 @@ for filename_left in left_file_list:
 
        #################################################################################
         # Output of image
-        ################################################################################
-        # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        t, _ = net.getPerfProfile()
+            ################################################################################
+            # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+            t, _ = net.getPerfProfile()
         label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
