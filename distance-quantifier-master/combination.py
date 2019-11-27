@@ -202,7 +202,7 @@ for filename_left in left_file_list:
         
         # Calculate threshold to remove the bounding boxes with low confidence
         confThreshold = cv2.getTrackbarPos(trackbarName,windowName) / 100
-        classIDs, confidences, boxes = yolo.yolo(imgL, confThreshold)
+        classIDs, classes, confidences, boxes = yolo.yolo(imgL, confThreshold)
 
 
         ################################################################################
@@ -257,11 +257,11 @@ for filename_left in left_file_list:
 
        #################################################################################
         # Output of image
-            ################################################################################
-            # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-            t, _ = net.getPerfProfile()
-        label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
-        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        ################################################################################
+        # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+        #t, _ = net.getPerfProfile()
+        #label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
+        #cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
         cv2.imshow(windowName,imgL)

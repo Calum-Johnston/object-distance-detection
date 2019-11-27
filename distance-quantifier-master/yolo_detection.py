@@ -23,6 +23,7 @@
 
 import cv2
 import os
+import numpy as np
 
 ################################################################################
 
@@ -140,4 +141,4 @@ def yolo(img, threshold):
     confThreshold = threshold
     classIDs, confidences, boxes = postprocess(img, results, confThreshold, nmsThreshold)
 
-    return classIDs, confidences, boxes
+    return classIDs, classes, confidences, boxes
