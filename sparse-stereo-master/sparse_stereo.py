@@ -3,7 +3,7 @@
 # Example : ORB feature point detection and matching between two
 # images from a set of image files
 
-# Author : TCalum Johnston, toby.breckon@durham.ac.uk
+# Author : Calum Johnston, toby.breckon@durham.ac.uk
 
 # License : LGPL - http://www.gnu.org/licenses/lgpl.html
 
@@ -13,12 +13,7 @@
 #####################################################################
 
 import cv2
-import argparse
-import sys
-import math
-import numpy as np
 import os
-from matplotlib import pyplot as plt
 
 # where is the data?
 
@@ -83,22 +78,21 @@ for filename_left in left_file_list:
         try:
             for (m,n) in matches:
                 if m.distance < 0.7*n.distance:
-                    good_matches.append(m) 
-                    pt1 = kpL[m.queryIdx].pt
-                    pt2 = kpR[m.trainIdx].pt 
-                    print(pt1, pt2)
-                    break;
+                    good_matches.append(m)
+                    pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
+                    pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
         except ValueError:
             print("caught error - no matches from current frame")
 
-        # draw matches
+        # draw matches onto images and display
         draw_params = dict(matchColor = (0,255,0), 
                            singlePointColor = (255,0,0), 
                            flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
         display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
-        keypoints_imgL = cv2.drawKeypoints(imgL, kpL, None, (0, 255, 0))
+        cv2.imshow("Matches", display_matches)
 
-        # show detected matches
-        cv2.imshow("hi",display_matches)
+        #draw keypoints onto images and display
+        #keypoints_imgL = cv2.drawKeypoints(imgL, kpL, None, (0, 255, 0))
+        #cv2.imshow("hi",keypoints_imgL)
 
         cv2.waitKey()
