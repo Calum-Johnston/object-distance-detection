@@ -1,8 +1,8 @@
 ################################################################################
 
-# Example : performs YOLO (v3) object detection from a dataset of image files
+# Example : performs YOLO (v3) object detection from a single image
 # - Detects object present within an image using YOLO
-# - Draws boxes onto image to show objects present (including % correctness)
+# - Returns the boxes detailing the location of objects
 
 # Author : Toby Breckon, toby.breckon@durham.ac.uk
 # Edited by: Calum Johnston, calum.p.johnston@durham.ac.uk
@@ -22,10 +22,6 @@
 ################################################################################
 
 import cv2
-import argparse
-import sys
-import math
-import numpy as np
 import os
 
 ################################################################################
