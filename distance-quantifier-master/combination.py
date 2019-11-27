@@ -179,7 +179,8 @@ def getOutputsNames(net):
 # Initialisation of dataset
 
 # where is the data?
-master_path_to_dataset = os.path.dirname(os.path.realpath(__file__)) + "\TTBB-durham-02-10-17-sub10";
+
+master_path_to_dataset = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "\z-resources\TTBB-durham-02-10-17-sub10";
 master_path_to_yolo_resources = os.path.dirname(os.path.realpath(__file__)) + "\yolo resources"; 
 directory_to_cycle_left = "left-images";     
 directory_to_cycle_right = "right-images"; 

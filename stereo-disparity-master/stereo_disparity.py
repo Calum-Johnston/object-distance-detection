@@ -20,7 +20,7 @@ import numpy as np
 
 # where is the data ? - set this to where you have it
 
-master_path_to_dataset = os.path.dirname(os.path.realpath(__file__)) + "\TTBB-durham-02-10-17-sub10"; 
+master_path_to_dataset = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "\z-resources\TTBB-durham-02-10-17-sub10";
 directory_to_cycle_left = "left-images";     
 directory_to_cycle_right = "right-images";   
 
