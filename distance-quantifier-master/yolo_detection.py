@@ -141,4 +141,6 @@ def yolo(img, threshold):
     confThreshold = threshold
     classIDs, confidences, boxes = postprocess(img, results, confThreshold, nmsThreshold)
 
-    return classIDs, classes, confidences, boxes
+    t, _ = net.getPerfProfile()
+
+    return classIDs, classes, confidences, boxes, t

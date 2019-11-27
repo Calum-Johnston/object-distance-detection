@@ -30,6 +30,7 @@ import math
 import numpy as np
 import os
 import yolo_detection as yolo
+import dense_disparity_detection as dis
 
 ################################################################################
 # === YOLO Object Detection Functions === #
@@ -133,12 +134,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 
 ################################################################################
-# Initialisation of Disparity 
-
-# setup the disparity stereo processor to find a maximum of 128 disparity values
-# (adjust parameters if needed - this will effect speed to processing)
-max_disparity = 128
-stereoProcessor = cv2.StereoSGBM_create(0, max_disparity, 21);
+# Initialisation of image parameters 
 
 # fixed camera parameters for this stereo setup (from calibration)
 camera_focal_length_px = 399.9745178222656  # focal length in pixels
@@ -197,71 +193,44 @@ for filename_left in left_file_list:
 
 
         ################################################################################
-        # YOLO Object Detection Calculations + Function Calls
+        # YOLO Object Detection 
         ################################################################################
-        
-        # Calculate threshold to remove the bounding boxes with low confidence
+        # Calculate threshold to remove the bounding boxes with low confidence (based on trackbar)
         confThreshold = cv2.getTrackbarPos(trackbarName,windowName) / 100
-        classIDs, classes, confidences, boxes = yolo.yolo(imgL, confThreshold)
+
+        # Gets the information about objects
+        classIDs, classes, confidences, boxes, t = yolo.yolo(imgL, confThreshold)
 
 
         ################################################################################
         # Stereo Disparity Calculations + Function Calls
         ################################################################################
-        # remember to convert to grayscale (as the disparity matching works on grayscale)
-        # N.B. need to do for both as both are 3-channel images
-        grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
-        grayR = cv2.cvtColor(imgR,cv2.COLOR_BGR2GRAY);
-
-        # perform preprocessing - raise to the power, as this subjectively appears
-        # to improve subsequent disparity calculation
-        grayL = np.power(grayL, 0.75).astype('uint8');
-        grayR = np.power(grayR, 0.75).astype('uint8');
-
-        # compute disparity image from undistorted and rectified stereo images
-        # that we have loaded
-        # (which for reasons best known to the OpenCV developers is returned scaled by 16)
-        disparity = stereoProcessor.compute(grayL, grayR);
-
-        # filter out noise and speckles (adjust parameters as needed)
-        dispNoiseFilter = 5; # increase for more agressive filtering
-        cv2.filterSpeckles(disparity, 0, 4000, max_disparity - dispNoiseFilter);
-
-        # Sparse stereo and issues
-        # https://www.intechopen.com/online-first/efficient-depth-estimation-using-sparse-stereo-vision-with-other-perception-techniques
-
-        # scale the disparity to 8-bit for viewing
-        # divide by 16 and convert to 8-bit image (then range of values should
-        # be 0 -> max_disparity) but in fact is (-1 -> max_disparity - 1)
-        # so we fix this also using a initial threshold between 0 and max_disparity
-        # as disparity=-1 means no disparity available
-        _, disparity = cv2.threshold(disparity,0, max_disparity * 16, cv2.THRESH_TOZERO);
-        disparity_scaled = (disparity / 16.).astype(np.uint8);
-
-        # display image (scaling it to the full 0->255 range based on the number
-        # of disparities in use for the stereo part)
-        disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
+        # Gets the disparity map for the left and right image
+        disparity = dis.disparity(imgL, imgR)
 
 
         ################################################################################
         # Resulting Distance Calculations + Drawing 
         ################################################################################
-        # get box distance and draw resulting box on image
+        # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            box.append(getBoxDistance(disparity_scaled, box))
+            box.append(getBoxDistance(disparity, box))
+        
+        # sorts the boxes as to draw the closest box first
         boxes.sort(key = lambda box: box[4], reverse = True)
+
+        # draw the boxes around the objects (label with data)
         for box in boxes:
             drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
 
-       #################################################################################
+        #################################################################################
         # Output of image
-        ################################################################################
-        # Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        #t, _ = net.getPerfProfile()
-        #label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
-        #cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        #################################################################################
+        #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+        label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
+        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
         cv2.imshow(windowName,imgL)
@@ -270,4 +239,5 @@ for filename_left in left_file_list:
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
+        # wait for user input till next image
         cv2.waitKey()
