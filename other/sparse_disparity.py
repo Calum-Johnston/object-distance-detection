@@ -63,12 +63,15 @@ for filename_left in left_file_list:
         # start a timer (to see how long processing and display takes)
         start_t = cv2.getTickCount()
 
+        # read in images
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
+        # detect the keypoints using ORB Detector, compute the descriptors
         kpL, desL = feature_object.detectAndCompute(imgL,None)
         kpR, desR = feature_object.detectAndCompute(imgR,None)
 
+        # Matching descriptor vectors with a FLANN based matcher
         matches = []
         if(len(desR > 0)):
             matches = matcher.knnMatch(desL, desR, k = 2)
@@ -76,19 +79,26 @@ for filename_left in left_file_list:
         # Need to draw only good matches, so create a mask
         good_matches = []
 
-        # perform a first match to second match ratio test as original SIFT paper (known as Lowe's ration)
-        # using the matching distances of the first and second matches
+        # filter matches using the Lowe's ratio test
         try:
             for (m,n) in matches:
                 if m.distance < 0.7*n.distance:
-                    good_matches.append(m)
+                    good_matches.append(m) 
+                    pt1 = kpL[m.queryIdx].pt
+                    pt2 = kpR[m.trainIdx].pt 
+                    print(pt1, pt2)
+                    break;
         except ValueError:
             print("caught error - no matches from current frame")
 
+        # draw matches
         draw_params = dict(matchColor = (0,255,0), 
                            singlePointColor = (255,0,0), 
-                           flags = 0)
-        #display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
-        cv2.imshow("hi",imgL)
+                           flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
+        display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
+        keypoints_imgL = cv2.drawKeypoints(imgL, kpL, None, (0, 255, 0))
+
+        # show detected matches
+        cv2.imshow("hi",display_matches)
 
         cv2.waitKey()
