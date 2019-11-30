@@ -42,7 +42,7 @@ for filename_left in left_file_list:
     print(full_path_filename_right);
     print();
 
-    feature_object = cv2.ORB_create(800)
+    feature_object = cv2.ORB_create(800, scoreType=cv2.ORB_FAST_SCORE)
     FLANN_INDEX_LSH = 6
     index_params= dict(algorithm = FLANN_INDEX_LSH,
         table_number = 6, # 12
