@@ -1,6 +1,6 @@
 #####################################################################
 
-# Example : compute SGBM disparity of two image
+# Example : compute SGBM disparity of two images
 
 # Author : Calum Johnston, calum.p.johnston@durham.ac.uk
 

@@ -3,7 +3,7 @@
 # Example : ORB feature point detection and matching between two
 # images from a set of image files
 
-# Author : Calum Johnston, toby.breckon@durham.ac.uk
+# Author : Calum Johnston, calum.p.johnston@durham.ac.uk
 
 # License : LGPL - http://www.gnu.org/licenses/lgpl.html
 
