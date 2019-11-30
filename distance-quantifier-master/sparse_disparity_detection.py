@@ -2,6 +2,7 @@
 
 # Example : ORB feature point detection and matching between two images
 # - images are passed in as parameters (assumed setup in another file)
+# - imgL should be simply a singular object (calculated by some method)
 
 # Author : Calum Johnston, calum.p.johnston@durham.ac.uk
 

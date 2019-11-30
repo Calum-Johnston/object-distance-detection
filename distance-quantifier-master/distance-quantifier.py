@@ -22,13 +22,8 @@
 
 ################################################################################
 
-import time
 import cv2
-import argparse
-import sys
-import math
 import numpy as np
-import os
 import yolo_detection as yolo
 import dense_disparity_detection as dis
 
