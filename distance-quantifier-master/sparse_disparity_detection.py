@@ -39,13 +39,17 @@ def disparity(imgL, imgR):
     # Need to draw only good matches, so create a mask
     good_matches = []
 
-    # filter matches using the Lowe's ratio test
+    # filter matches so some matches aren't included
+    # - using Lowe's ratio test
+    # - by determining whether they lie on a similar y axis 
     try:
         for (m,n) in matches:
             if m.distance < 0.7*n.distance:
-                good_matches.append(m)
                 pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
                 pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
+                if not(pt1[1] > pt2[1] + 10 or pt1[1] + 10 < pt2[1]):
+                        print(pt1, pt2)
+                        good_matches.append(m)
     except ValueError:
         print("caught error - no matches from current frame")
 
