@@ -42,7 +42,7 @@ for filename_left in left_file_list:
     print(full_path_filename_right);
     print();
 
-    feature_object = cv2.ORB_create(800, scoreType=cv2.ORB_FAST_SCORE)
+    feature_object = cv2.ORB_create(nfeatures = 5000)
     FLANN_INDEX_LSH = 6
     index_params= dict(algorithm = FLANN_INDEX_LSH,
         table_number = 6, # 12
@@ -61,9 +61,19 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
+        imgL = imgL[144:227, 243:326]
+        imgR = imgR[154:217, 0:imgR.shape[1]]
+
         # detect the keypoints using ORB Detector, compute the descriptors
         kpL, desL = feature_object.detectAndCompute(imgL,None)
-        kpR, desR = feature_object.detectAndCompute(imgR,None)
+        #kpR, desR = feature_object.detectAndCompute(imgR,None)
+
+        #keypoints_imgR = cv2.drawKeypoints(imgR, kpR, None, (0, 255, 0))
+        keypoints_imgL = cv2.drawKeypoints(imgL, kpL, None, (0, 255, 0))
+        #cv2.imshow("hi",keypoints_imgR)
+        cv2.imshow("left", keypoints_imgL)
+
+        cv2.waitKey()
 
         # Matching descriptor vectors with a FLANN based matcher
         matches = []
@@ -78,7 +88,7 @@ for filename_left in left_file_list:
             for (m,n) in matches:
                 if m.distance < 0.7*n.distance:
                     good_matches.append(m)
-                    pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
+                    pt1= kpL[m.queryIdx].pt  #coordinates of left image feature
                     pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
         except ValueError:
             print("caught error - no matches from current frame")

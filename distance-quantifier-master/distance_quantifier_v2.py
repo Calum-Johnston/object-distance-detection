@@ -24,8 +24,9 @@
 
 import cv2
 import numpy as np
+import os
+import sparse_disparity_detection as dis
 import yolo_detection as yolo
-import dense_disparity_detection as dis
 
 ################################################################################
 # === YOLO Object Detection Functions === #
@@ -64,40 +65,47 @@ def drawPred(image, class_name, confidence, box, colour):
     cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
 
 #####################################################################
-# Gets the distance of an object  in an image based on the area around it
-# disparity_scaled: scaled version of the disparity map
+# Gets the distance of an object in an image based on the area around it
 # box: image parameters for object detection
-def getBoxDistance(disparity_scaled, box):
+# imgL: image in which the object will be cropped from
+# imgR: image to compare the object against for feature detection
+def getBoxDistance(box, imgL, imgR):
     # Get information about box
     left = box[0]; top = box[1]
     width = box[2]; height = box[3]
     right = left + width
     bottom = top + height
 
+    # Get details of camera, to be used to calculate distance
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
 
-    totalDisparity = 0
-    totalCount = 0
+    # Setup increase parameters for the box
+    heightIncrease = 0
+    widthIncrease = 0
 
     # Trim the box to hopefully isolate object and reduce background noise
-    right -= int((right - left) * 0.4)
-    left += int((right - left) * 0.4)
-    bottom -= int((bottom - top) * 0.4)
-    top += int((bottom - top) * 0.4)
+    # (note, only do so if box is already of a certain size)
+    if(height > 80 and width > 80):
+        right -= int((right - left) * 0.4)
+        left += int((right - left) * 0.4)
+        bottom -= int((bottom - top) * 0.4)
+        top += int((bottom - top) * 0.4)
+
+    # Ensure box isn't out of bounds of the image
+    top = max(0, top)
+    left = max(0, left)
+
+    print(top, top+height, left, left+width)
+    cropImgL = imgL[top:top+height, left:left+width]
+    cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
+
+    # Gets the distance of the object using the disparity of only that object
+    distance = dis.disparity(cropImgL, imgR, heightIncrease, widthIncrease)
+
+    cv2.imshow("imaqge", distance)
 
     # Loops through all box pixels to produce an average disparity
-    for x in range(left, right):
-        for y in range(top, bottom):
-            if(y < imgL.shape[0] and x < imgL.shape[1]):
-                if(disparity_scaled[y, x] > 0):
-                    currentDisparity = disparity_scaled[y, x]
-                    totalDisparity = totalDisparity + currentDisparity
-                    totalCount += 1
-    if(totalCount > 0):
-        averageDisparity = totalDisparity / totalCount
-        averageDistance = (f * B) / averageDisparity
-        return averageDistance 
     return 0       
 
 
@@ -198,19 +206,12 @@ for filename_left in left_file_list:
 
 
         ################################################################################
-        # Stereo Disparity Calculations + Function Calls
-        ################################################################################
-        # Gets the disparity map for the left and right image
-        disparity = dis.disparity(imgL, imgR)
-
-
-        ################################################################################
         # Resulting Distance Calculations + Drawing 
         ################################################################################
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            box.append(getBoxDistance(disparity, box))
+            box.append(getBoxDistance(box, imgL, imgR))
         
         # sorts the boxes as to draw the closest box first
         boxes.sort(key = lambda box: box[4], reverse = True)

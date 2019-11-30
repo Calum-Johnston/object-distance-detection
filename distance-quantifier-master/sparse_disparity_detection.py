@@ -16,7 +16,7 @@
 import cv2
 
 # Initiate ORB detector (to detect feature points within images)
-feature_object = cv2.ORB_create(800, scoreType=cv2.ORB_FAST_SCORE)
+feature_object = cv2.ORB_create(5000, scoreType=cv2.ORB_FAST_SCORE)
 
 # setup the FLANN parameters and initialise the matcher
 FLANN_INDEX_LSH = 6
@@ -27,7 +27,8 @@ index_params= dict(algorithm = FLANN_INDEX_LSH,
 search_params = dict(checks=50)
 matcher = cv2.FlannBasedMatcher(index_params,search_params)
 
-def disparity(imgL, imgR):
+def disparity(imgL, imgR, heightInc, widthInc):
+
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
     kpR, desR = feature_object.detectAndCompute(imgR,None)
@@ -59,6 +60,5 @@ def disparity(imgL, imgR):
                         singlePointColor = (255,0,0), 
                         flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
-    cv2.imshow("Matches", display_matches)
 
     return display_matches
