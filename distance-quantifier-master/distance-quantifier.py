@@ -179,9 +179,6 @@ for filename_left in left_file_list:
         # start a timer (to see how long processing and display takes)
         start_t = cv2.getTickCount()
 
-        # create window by name (as resizable)
-        cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
-
         # read left and right images
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
@@ -225,8 +222,7 @@ for filename_left in left_file_list:
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
-        cv2.imshow(windowName,imgL)
-        cv2.setWindowProperty(windowName, cv2.WND_PROP_FULLSCREEN, cv2.WINDOW_FULLSCREEN)
+        cv2.imshow("Object Detection",imgL)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
