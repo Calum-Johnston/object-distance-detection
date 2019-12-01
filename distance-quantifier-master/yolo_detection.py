@@ -123,7 +123,7 @@ net.setPreferableTarget(cv2.dnn.DNN_TARGET_CPU)
 
 
 
-def yolo(img, threshold):
+def yolo(img):
     # create a 4D tensor (OpenCV 'blob') from image frame (pixels scaled 0->1, image resized)
     blob = cv2.dnn.blobFromImage(img, 1/255, (inpWidth, inpHeight), [0,0,0], 1, crop=False)
 
@@ -133,8 +133,7 @@ def yolo(img, threshold):
     # runs forward inference to get output of the final output layers
     results = net.forward(output_layer_names)
 
-    # remove the bounding boxes with low confidence
-    confThreshold = threshold
+    # remove the bounding boxes with low confidenc
     classIDs, confidences, boxes = postprocess(img, results, confThreshold, nmsThreshold)
 
     t, _ = net.getPerfProfile()

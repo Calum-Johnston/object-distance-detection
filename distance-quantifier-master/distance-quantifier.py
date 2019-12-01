@@ -144,15 +144,6 @@ image_cent4re_w = 474.5;
 
 
 
-################################################################################
-# Define display window name + trackbar
-
-windowName = 'Object distance detection'
-cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
-trackbarName = 'reporting confidence > (x 0.01)'
-cv2.createTrackbar(trackbarName, windowName , 0, 100, on_trackbar)
-
-
 
 
 
@@ -199,11 +190,8 @@ for filename_left in left_file_list:
         ################################################################################
         # YOLO Object Detection 
         ################################################################################
-        # Calculate threshold to remove the bounding boxes with low confidence (based on trackbar)
-        confThreshold = cv2.getTrackbarPos(trackbarName,windowName) / 100
-
         # Gets the information about objects
-        classIDs, classes, confidences, boxes, t = yolo.yolo(imgL, confThreshold)
+        classIDs, classes, confidences, boxes, t = yolo.yolo(imgL)
 
 
         ################################################################################
