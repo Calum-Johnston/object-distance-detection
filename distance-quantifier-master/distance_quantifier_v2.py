@@ -73,20 +73,18 @@ def getBoxDistance(box, imgL, imgR):
     # Get information about box
     left = box[0]; top = box[1]
     width = box[2]; height = box[3]
-    right = left + width
-    bottom = top + height
 
     # Get details of camera, to be used to calculate distance
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
 
-    # Trim the box to hopefully isolate object and reduce background noise
+    # Trim the box to hopefully isolate object and reduce background noise (by 20%)
     # (note, only do so if box is already of a certain size)
-    if(height > 80 and width > 80):
-        right -= int((right - left) * 0.4)
-        left += int((right - left) * 0.4)
-        bottom -= int((bottom - top) * 0.4)
-        top += int((bottom - top) * 0.4)
+    if(height > 100 and width > 100):
+        top += int(height * 0.2)
+        height = int(height * 0.6)
+        left += int(width * 0.2)
+        width = int(width * 0.6)
 
     # Ensure box isn't out of bounds of the image
     top = max(0, top)

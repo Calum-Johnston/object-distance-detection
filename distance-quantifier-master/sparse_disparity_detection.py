@@ -16,7 +16,7 @@
 import cv2
 
 # Initiate ORB detector (to detect feature points within images)
-feature_object = cv2.ORB_create(5000, scoreType=cv2.ORB_FAST_SCORE)
+feature_object = cv2.ORB_create(50000, scoreType=cv2.ORB_FAST_SCORE)
 
 # setup the FLANN parameters and initialise the matcher
 FLANN_INDEX_LSH = 6
@@ -34,7 +34,7 @@ def disparity(imgL, imgR, f, B):
     if(imgL.shape[0] < 100):
         padHeight = int((100 - imgL.shape[0]) / 2)
         imgL = cv2.copyMakeBorder(imgL, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
-        imgR = cv2.copyMakeBorder(imgR, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
+        imgR = cv2.copyMakeBorder(imgR, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
     if(imgL.shape[1] < 100):
         padWidth = int((100 - imgL.shape[1]) / 2)
         imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
@@ -60,7 +60,7 @@ def disparity(imgL, imgR, f, B):
             if m.distance < 0.7*n.distance:
                 pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
                 pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
-                if not(pt1[1] > pt2[1] + 10 or pt1[1] + 10 < pt2[1]):
+                if (pt1[1] == pt2[1]):
                     good_matches.append(m)
     except ValueError:
         print("caught error - no matches from current frame")
@@ -79,13 +79,17 @@ def disparity(imgL, imgR, f, B):
     return average_distance
 
 def getAverageDistances(good_matches, kpL, kpR, f, B):
-    totalDistance = 0
+    totalDisparity = 0
     count = 0
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
         disparity = abs(ptL[0] - ptR[1])
-        if(disparity != 0):
-            totalDistance += f * B / disparity
+        if(disparity > 0):
+            totalDisparity += disparity
             count += 1
-    return totalDistance / count
+    if(count > 0): 
+        averageDisparity = totalDisparity / count
+        averageDistance = (f * B) / averageDisparity
+        return averageDisparity
+    return 0
