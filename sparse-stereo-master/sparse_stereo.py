@@ -61,17 +61,15 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
-        imgL = imgL[144:227, 243:326]
-        imgR = imgR[154:217, 0:imgR.shape[1]]
-
         # detect the keypoints using ORB Detector, compute the descriptors
         kpL, desL = feature_object.detectAndCompute(imgL,None)
-        #kpR, desR = feature_object.detectAndCompute(imgR,None)
+        kpR, desR = feature_object.detectAndCompute(imgR,None)
 
-        #keypoints_imgR = cv2.drawKeypoints(imgR, kpR, None, (0, 255, 0))
+        # Draw keypoints onto each image respectively and display
+        keypoints_imgR = cv2.drawKeypoints(imgR, kpR, None, (0, 255, 0))
         keypoints_imgL = cv2.drawKeypoints(imgL, kpL, None, (0, 255, 0))
-        #cv2.imshow("hi",keypoints_imgR)
-        cv2.imshow("left", keypoints_imgL)
+        cv2.imshow("imgL keypoints", keypoints_imgL)
+        cv2.imshow("imgR keypoints", keypoints_imgR)
 
         cv2.waitKey()
 
