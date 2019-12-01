@@ -80,11 +80,11 @@ def getBoxDistance(box, imgL, imgR):
 
     # Trim the box to hopefully isolate object and reduce background noise (by 20%)
     # (note, only do so if box is already of a certain size)
-    if(height > 100 and width > 100):
-        top += int(height * 0.2)
-        height = int(height * 0.6)
-        left += int(width * 0.2)
-        width = int(width * 0.6)
+    #if(height > 100 and width > 100):
+       # top += int(height * 0.2)
+        #height = int(height * 0.6)
+       # left += int(width * 0.2)
+       # width = int(width * 0.6)
 
     # Ensure box isn't out of bounds of the image
     top = max(0, top)
@@ -97,7 +97,7 @@ def getBoxDistance(box, imgL, imgR):
     cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
 
     # Gets the distance of the object using the disparity of only that object
-    distance = dis.disparity(cropImgL, cropImgR, f, B)
+    distance = dis.disparity(cropImgL, cropImgR, f, B, left)
 
     return distance
     
@@ -127,6 +127,10 @@ full_path_directory_right =  os.path.join(master_path_to_dataset, directory_to_c
 # get a list of the left image files and sort them (by timestamp in filename)
 left_file_list = sorted(os.listdir(full_path_directory_left));
 
+# set this to a file timestamp to start from (empty is first example - outside lab)
+# e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
+skip_forward_file_pattern = "1506942604.475373"; 
+
 
 
 
@@ -146,7 +150,7 @@ image_cent4re_w = 474.5;
 ################################################################################
 # Define display window name + trackbar
 
-windowName = 'Object distance detection'
+windowName = 'Object distance detection v2'
 cv2.namedWindow(windowName, cv2.WINDOW_NORMAL)
 trackbarName = 'reporting confidence > (x 0.01)'
 cv2.createTrackbar(trackbarName, windowName , 0, 100, on_trackbar)
@@ -161,6 +165,13 @@ cv2.createTrackbar(trackbarName, windowName , 0, 100, on_trackbar)
 ################################################################################
 
 for filename_left in left_file_list:
+
+    # skip forward to start a file we specify by timestamp (if this is set)
+    if ((len(skip_forward_file_pattern) > 0) and not(skip_forward_file_pattern in filename_left)):
+        continue;
+    elif ((len(skip_forward_file_pattern) > 0) and (skip_forward_file_pattern in filename_left)):
+        skip_forward_file_pattern = "";
+
 
     # from the left image filename get the correspondoning right image
     filename_right = filename_left.replace("_L", "_R");
