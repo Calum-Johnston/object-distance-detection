@@ -172,7 +172,6 @@ for filename_left in left_file_list:
     elif ((len(skip_forward_file_pattern) > 0) and (skip_forward_file_pattern in filename_left)):
         skip_forward_file_pattern = "";
 
-
     # from the left image filename get the correspondoning right image
     filename_right = filename_left.replace("_L", "_R");
     full_path_filename_left = os.path.join(full_path_directory_left, filename_left);

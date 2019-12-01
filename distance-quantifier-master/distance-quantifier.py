@@ -126,6 +126,9 @@ full_path_directory_right =  os.path.join(master_path_to_dataset, directory_to_c
 # get a list of the left image files and sort them (by timestamp in filename)
 left_file_list = sorted(os.listdir(full_path_directory_left));
 
+# set this to a file timestamp to start from (empty is first example - outside lab)
+# e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
+skip_forward_file_pattern = "1506942604.475373"; 
 
 
 
@@ -160,6 +163,12 @@ cv2.createTrackbar(trackbarName, windowName , 0, 100, on_trackbar)
 ################################################################################
 
 for filename_left in left_file_list:
+
+    # skip forward to start a file we specify by timestamp (if this is set)
+    if ((len(skip_forward_file_pattern) > 0) and not(skip_forward_file_pattern in filename_left)):
+        continue;
+    elif ((len(skip_forward_file_pattern) > 0) and (skip_forward_file_pattern in filename_left)):
+        skip_forward_file_pattern = "";
 
     # from the left image filename get the correspondoning right image
     filename_right = filename_left.replace("_L", "_R");
