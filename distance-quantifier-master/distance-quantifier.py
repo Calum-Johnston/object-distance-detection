@@ -187,7 +187,7 @@ for filename_left in left_file_list:
 
 
         ################################################################################
-        # Stereo Disparity Calculations + Function Calls
+        # Stereo Disparity & Distance Calculation
         ################################################################################
         # Gets the disparity map for the left and right image
         disparity = dis.disparity(imgL, imgR)
