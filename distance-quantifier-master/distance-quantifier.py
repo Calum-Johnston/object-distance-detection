@@ -177,8 +177,8 @@ for filename_left in left_file_list:
         # read left and right images
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
-
-
+        
+        
         ################################################################################
         # YOLO Object Detection 
         ################################################################################

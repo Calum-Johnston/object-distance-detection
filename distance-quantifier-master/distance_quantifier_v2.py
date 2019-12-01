@@ -58,11 +58,11 @@ def drawPred(image, class_name, confidence, box, colour):
     label = '%s:%.2fm (%.2f)' % (class_name, distance, confidence)
 
     #Display the label at the top of the bounding box
-    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.5, 1)
+    labelSize, baseLine = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.3, 1)
     top = max(top, labelSize[1])
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
-    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.75, (0,0,0), 1)
+    cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,0), 1)
 
 #####################################################################
 # Gets the distance of an object in an image based on the area around it
@@ -97,7 +97,7 @@ def getBoxDistance(box, imgL, imgR):
     cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
 
     # Gets the distance of the object using the disparity of only that object
-    distance = dis.disparity(cropImgL, cropImgR, f, B, left)
+    distance = dis.disparity(cropImgL, cropImgR, f, B, top, left)
 
     return distance
     

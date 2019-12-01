@@ -34,7 +34,7 @@ matcher = cv2.FlannBasedMatcher(index_params,search_params)
 # f: focal length in pixels (camera parameter)
 # B: camera baseline in metres (camera parameter)
 # startX: corresponding starting x coordinate from imgL (cropped object image) to original image
-def disparity(imgL, imgR, f, B, startX):
+def disparity(imgL, imgR, f, B, top, left):
 
     # Pad the image with bits if too small
     # (done due to the default scale settings on ORB)
@@ -46,6 +46,10 @@ def disparity(imgL, imgR, f, B, startX):
         padWidth = int((100 - imgL.shape[1]) / 2)
         imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
         imgR = cv2.copyMakeBorder(imgR, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT, value=(255, 255, 255))
+
+    # Convert to gray??
+
+    # Histogram equalisation??
 
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
@@ -79,7 +83,7 @@ def disparity(imgL, imgR, f, B, startX):
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
 
     # Gets the average distance based on the best features mapped
-    average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, startX)
+    average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, top, left)
 
     return average_distance
 
@@ -92,13 +96,13 @@ def disparity(imgL, imgR, f, B, startX):
 # f: focal length in pixels (camera parameter)
 # B: camera baseline in metres (camera parameter)
 # startX: corresponding starting x coordinate from imgL (cropped object image) to original image
-def getAverageDistances(good_matches, kpL, kpR, f, B, startX):
+def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
     totalDisparity = 0
     count = 0
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
-        disparity = abs((ptL[0] + startX) - ptR[0])
+        disparity = abs((ptL[0] + top) - ptR[0])
         if(disparity > 0):
             totalDisparity += disparity
             count += 1
