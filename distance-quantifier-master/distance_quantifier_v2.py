@@ -80,10 +80,6 @@ def getBoxDistance(box, imgL, imgR):
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
 
-    # Setup increase parameters for the box
-    heightIncrease = 0
-    widthIncrease = 0
-
     # Trim the box to hopefully isolate object and reduce background noise
     # (note, only do so if box is already of a certain size)
     if(height > 80 and width > 80):
@@ -96,17 +92,17 @@ def getBoxDistance(box, imgL, imgR):
     top = max(0, top)
     left = max(0, left)
 
-    print(top, top+height, left, left+width)
+    # Crop left image to isolate object
+    # Crop right image to only incorporate possible matching features
+    # (Images have already been rectified, so discard other y values)
     cropImgL = imgL[top:top+height, left:left+width]
     cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
 
     # Gets the distance of the object using the disparity of only that object
-    distance = dis.disparity(cropImgL, imgR, heightIncrease, widthIncrease)
+    distance = dis.disparity(cropImgL, cropImgR, f, B)
 
-    cv2.imshow("imaqge", distance)
-
-    # Loops through all box pixels to produce an average disparity
-    return 0       
+    return distance
+    
 
 
 

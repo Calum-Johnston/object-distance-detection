@@ -27,7 +27,18 @@ index_params= dict(algorithm = FLANN_INDEX_LSH,
 search_params = dict(checks=50)
 matcher = cv2.FlannBasedMatcher(index_params,search_params)
 
-def disparity(imgL, imgR, heightInc, widthInc):
+def disparity(imgL, imgR, f, B):
+
+    # Pad the image with bits if too small
+    # (done due to the default scale settings on ORB)
+    if(imgL.shape[0] < 100):
+        padHeight = int((100 - imgL.shape[0]) / 2)
+        imgL = cv2.copyMakeBorder(imgL, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
+        imgR = cv2.copyMakeBorder(imgR, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
+    if(imgL.shape[1] < 100):
+        padWidth = int((100 - imgL.shape[1]) / 2)
+        imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
+        imgR = cv2.copyMakeBorder(imgR, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
 
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
@@ -50,8 +61,7 @@ def disparity(imgL, imgR, heightInc, widthInc):
                 pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
                 pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
                 if not(pt1[1] > pt2[1] + 10 or pt1[1] + 10 < pt2[1]):
-                        print(pt1, pt2)
-                        good_matches.append(m)
+                    good_matches.append(m)
     except ValueError:
         print("caught error - no matches from current frame")
 
@@ -61,4 +71,21 @@ def disparity(imgL, imgR, heightInc, widthInc):
                         flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
 
-    return display_matches
+    cv2.imshow("matches", display_matches)
+    cv2.waitKey()
+
+    average_distance = getAverageDistances(good_matches, kpL, kpR, f, B)
+
+    return average_distance
+
+def getAverageDistances(good_matches, kpL, kpR, f, B):
+    totalDistance = 0
+    count = 0
+    for match in good_matches:
+        ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
+        ptR = kpR[match.trainIdx].pt  # coordinates of right image features
+        disparity = abs(ptL[0] - ptR[1])
+        if(disparity != 0):
+            totalDistance += f * B / disparity
+            count += 1
+    return totalDistance / count

@@ -24,8 +24,9 @@
 
 import cv2
 import numpy as np
-import yolo_detection as yolo
+import os
 import dense_disparity_detection as dis
+import yolo_detection as yolo
 
 ################################################################################
 # === YOLO Object Detection Functions === #
