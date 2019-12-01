@@ -29,13 +29,8 @@ import dense_disparity_detection as dis
 import yolo_detection as yolo
 
 ################################################################################
-# === YOLO Object Detection Functions === #
+# === DRAWING FUNCTIONS === #
 ################################################################################
-
-################################################################################
-# dummy on trackbar callback function
-def on_trackbar(val):
-    return
 
 #####################################################################
 # Draw the predicted bounding box on the specified image
