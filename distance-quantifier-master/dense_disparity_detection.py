@@ -14,10 +14,42 @@ import numpy as np
   
 #####################################################################
 
+# https://docs.opencv.org/master/d2/d85/classcv_1_1StereoSGBM.html
+
+#setup disparity stereo processor parameters
+SADWindowSize = 2
+minDisparity = 0                   # Minimum possible disparity value (default 0)
+numDisparities = 128               # Maximum disparity minus minimum disparity (default 16)
+blockSize = 6                      # Matched block size - must be odd (default 3)
+P1 = 8 * 1 * SADWindowSize ** 2    # Controls disparity smoothness (default 0)
+P2 = 32 * 1 * SADWindowSize ** 2   # Controls disparity smoothness (default 0)
+disp12MaxDiff = 0                  # Maximum allowed difference in the left-right disparity check
+preFilterCap = 0                   # Truncation value for the prefiltered image pixels
+uniquenessRatio = 15               # Margin in percentage by which the best (minimum) computed cost function value should "win" the second best value to consider the found match correct.
+speckleWindowSize = 200            # Maximum size of smooth disparity regions to consider their noise and speckles invalidate
+speckleRange = 2                   # Maximum disparity variation within each connected component
+mode = cv2.STEREO_SGBM_MODE_SGBM  
+
 # setup the disparity stereo processor to find a maximum of 128 disparity values
 # (adjust parameters if needed - this will effect speed to processing)
-max_disparity = 128;
-stereoProcessor = cv2.StereoSGBM_create(0, max_disparity, 21);
+max_disparity = 128
+
+# setup the StereoSGBM object
+stereoProcessor = cv2.StereoSGBM_create(
+    minDisparity=minDisparity,
+    numDisparities=numDisparities,
+    blockSize=blockSize,
+    P1=P1,
+    P2=P2,
+    disp12MaxDiff=disp12MaxDiff,
+    preFilterCap=preFilterCap,
+    uniquenessRatio=uniquenessRatio,
+    speckleWindowSize=speckleWindowSize,
+    speckleRange=speckleRange,
+    mode=mode
+    )
+
+
 
 def disparity(imgL, imgR):
     # remember to convert to grayscale (as the disparity matching works on grayscale)
