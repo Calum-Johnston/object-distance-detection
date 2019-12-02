@@ -218,19 +218,9 @@ for filename_left in left_file_list:
         # done in seperate loop as previous to ensure no features of the boxes are matched
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            print(box[1], box[1] + box[3], box[0], box[0] + box[2])
-            print(not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]))
             if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (box[4] > 0): 
                 drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
             
-        # sorts the boxes as to draw the closest box first
-        # boxes.sort(key = lambda box: box[4], reverse = True)
-
-        # draw the boxes around the objects (label with data)
-        # for box in boxes:
-        #    drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-
-        
 
         #################################################################################
         # Output of image
@@ -238,9 +228,6 @@ for filename_left in left_file_list:
         #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
         label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
-
-        # fix image (adding removed part back on)
-        #resultImg = np.concatenate((imgL, removedImgL), axis=0)
 
         # display image
         cv2.imshow("Object Detection v2",result_imgL)
