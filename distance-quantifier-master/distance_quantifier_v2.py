@@ -186,11 +186,13 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
-        imgL = imgL[0:390,135:imgL.shape[1]]
-        imgR = imgR[0:390,135:imgR.shape[1]]
+        # removes part of image that contains the car
+        
+        removedImgL = imgL[410:544,0:imgL.shape[1]]
+        imgL = imgL[0:410,0:imgL.shape[1]]
+        imgR = imgR[0:410,0:imgR.shape[1]]
+ 
 
-        cv2.imshow("left", imgL)
-        cv2.imshow("right", imgR)
 
 
         ################################################################################
@@ -208,9 +210,13 @@ for filename_left in left_file_list:
             box = boxes[detected_object]
             distance = getBoxDistance(box, imgL, imgR)
             if(distance != 0):
-                print(distance)
                 box.append(getBoxDistance(box, imgL, imgR))
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+
+        # draw each box onto the image
+        # Done in seperate loop as previous to ensure 
+        for detected_object in range(0, len(boxes)):
+            box = boxes[detected_object]
+            drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
         
         # sorts the boxes as to draw the closest box first
         #boxes.sort(key = lambda box: box[4], reverse = True)
@@ -219,6 +225,7 @@ for filename_left in left_file_list:
         #for box in boxes:
          #   drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
+        
 
         #################################################################################
         # Output of image
@@ -227,8 +234,11 @@ for filename_left in left_file_list:
         label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
+        # fix image (adding removed part back on)
+        resultImg = np.concatenate((imgL, removedImgL), axis=0)
+
         # display image
-        cv2.imshow("Object Detection",imgL)
+        cv2.imshow("Object Detection",resultImg)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000

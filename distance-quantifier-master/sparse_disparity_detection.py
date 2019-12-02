@@ -16,7 +16,7 @@
 import cv2
 
 # setup ORB feature detection parameters
-nfeatures = 500                   # Maximum number of features to retain
+nfeatures = 5000                   # Maximum number of features to retain
 scaleFactor = 1.2                   # Pyramid decimation ratio
 nlevels = 8                         # The number of pyramid levels
 edgeThreshold = 15                   # Size of the border where the features are not detected (should match PatchSize)
