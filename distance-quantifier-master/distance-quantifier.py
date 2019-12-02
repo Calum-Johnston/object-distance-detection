@@ -95,7 +95,6 @@ def getBoxDistance(disparity_scaled, box):
        # return averageDistance
 
     disparity = disparity_scaled[int(top+(height/2)), int(left+(width/2))]
-    print(disparity)
     if(disparity > 0):
         distance = (f*B)/disparity
         return distance

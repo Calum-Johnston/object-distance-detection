@@ -129,7 +129,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = "1506942604.475373"; 
+skip_forward_file_pattern = ""#"1506942604.475373"; 
 
 
 
@@ -186,9 +186,8 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
-        # get the part of imgL that we will remove later
-        # (Note: it isn't removed now as it affects YOLO object detection if done)
-        removedImgL = imgL[410:544,0:imgL.shape[1]]
+        # copy imgL (while it's unused) - to be used for drawing boxes on later
+        result_imgL = imgL.copy()
 
 
         ################################################################################
@@ -214,12 +213,13 @@ for filename_left in left_file_list:
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
-        # - as long as they're not the car from which we are gathering distance (box[1] - represents top of car)
+        # - as long as they're not the car from which we are gathering distance (box[1], box[3] - top, height resp. )
         # done in seperate loop as previous to ensure no features of the boxes are matched
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            if(box[1] < 410 and box[4] > 0): 
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+            print(box[1] + box[3], box[1], box[3])
+            if(box[1] + box[3] < 540 and box[4] > 0): 
+                drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
             
         # sorts the boxes as to draw the closest box first
         #boxes.sort(key = lambda box: box[4], reverse = True)
@@ -238,10 +238,10 @@ for filename_left in left_file_list:
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # fix image (adding removed part back on)
-        resultImg = np.concatenate((imgL, removedImgL), axis=0)
+        #resultImg = np.concatenate((imgL, removedImgL), axis=0)
 
         # display image
-        cv2.imshow("Object Detection v2",resultImg)
+        cv2.imshow("Object Detection v2",result_imgL)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
