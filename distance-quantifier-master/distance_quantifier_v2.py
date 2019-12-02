@@ -186,6 +186,12 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
+        imgL = imgL[0:390,135:imgL.shape[1]]
+        imgR = imgR[0:390,135:imgR.shape[1]]
+
+        cv2.imshow("left", imgL)
+        cv2.imshow("right", imgR)
+
 
         ################################################################################
         # YOLO Object Detection 
@@ -202,6 +208,7 @@ for filename_left in left_file_list:
             box = boxes[detected_object]
             distance = getBoxDistance(box, imgL, imgR)
             if(distance != 0):
+                print(distance)
                 box.append(getBoxDistance(box, imgL, imgR))
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
         

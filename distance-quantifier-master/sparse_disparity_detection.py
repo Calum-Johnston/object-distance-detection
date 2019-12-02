@@ -15,8 +15,29 @@
 
 import cv2
 
+# setup ORB feature detection parameters
+nfeatures = 500                   # Maximum number of features to retain
+scaleFactor = 1.2                   # Pyramid decimation ratio
+nlevels = 8                         # The number of pyramid levels
+edgeThreshold = 15                   # Size of the border where the features are not detected (should match PatchSize)
+firstLevel = 0                      # The level of pyramid to put source image to
+WTA_K = 2                           # The number of points that produce each element of the oriented BRIEF descriptor
+scoreType = cv2.ORB_HARRIS_SCORE    # Harris algorithm used to rank features. FAST_SCORE could also be used, faster to compute but produces less stable keypoints
+patchSize = 15                      # Size of the patch used by the oriented BRIEF descriptor
+fastThreshold = 20                  # The fast threshold
+
 # Initiate ORB detector (to detect feature points within images)
-feature_object = cv2.ORB_create(50000, scoreType=cv2.ORB_FAST_SCORE)
+feature_object = cv2.ORB_create(
+    nfeatures=nfeatures,
+    scaleFactor=scaleFactor,                   
+    nlevels=nlevels,             
+    edgeThreshold=edgeThreshold,
+    firstLevel=firstLevel,
+    WTA_K=WTA_K,
+    scoreType=scoreType,    
+    patchSize=patchSize,                      
+    fastThreshold=fastThreshold
+    )
 
 # setup the FLANN parameters and initialise the matcher
 FLANN_INDEX_LSH = 6
@@ -38,12 +59,12 @@ def disparity(imgL, imgR, f, B, top, left):
 
     # Pad the image with bits if too small
     # (done due to the default scale settings on ORB)
-    if(imgL.shape[0] < 100):
-        padHeight = int((100 - imgL.shape[0]) / 2)
+    if(imgL.shape[0] < 250):
+        padHeight = int((250 - imgL.shape[0]) / 2)
         imgL = cv2.copyMakeBorder(imgL, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
         imgR = cv2.copyMakeBorder(imgR, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
-    if(imgL.shape[1] < 100):
-        padWidth = int((100 - imgL.shape[1]) / 2)
+    if(imgL.shape[1] < 250):
+        padWidth = int((250 - imgL.shape[1]) / 2)
         imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
         imgR = cv2.copyMakeBorder(imgR, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
@@ -64,7 +85,8 @@ def disparity(imgL, imgR, f, B, top, left):
     good_matches = []
 
     # filter matches so some matches aren't included
-    # - using Lowe's ratio test
+    # - using Lowe's ratio test (rejects poor matches by computing ratio
+    # between best and the second-best match)
     # - by determining whether they lie on a similar y axis 
     try:
         for (m,n) in matches:
@@ -81,6 +103,9 @@ def disparity(imgL, imgR, f, B, top, left):
                         singlePointColor = (255,0,0), 
                         flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
+
+    cv2.imshow("Matches", display_matches)
+    cv2.waitKey()
 
     # Gets the average distance based on the best features mapped
     average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, top, left)
