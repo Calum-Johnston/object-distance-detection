@@ -213,20 +213,22 @@ for filename_left in left_file_list:
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
-        # - as long as they're not the car from which we are gathering distance (box[1], box[3] - top, height resp. )
+        # - as long as they're not the car from which we are gathering distance
+        # - - above done by checking whether centre of car is in box
         # done in seperate loop as previous to ensure no features of the boxes are matched
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            print(box[1] + box[3], box[1], box[3])
-            if(box[1] + box[3] < 540 and box[4] > 0): 
+            print(box[1], box[1] + box[3], box[0], box[0] + box[2])
+            print(not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]))
+            if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (box[4] > 0): 
                 drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
             
         # sorts the boxes as to draw the closest box first
-        #boxes.sort(key = lambda box: box[4], reverse = True)
+        # boxes.sort(key = lambda box: box[4], reverse = True)
 
         # draw the boxes around the objects (label with data)
-        #for box in boxes:
-        #   drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+        # for box in boxes:
+        #    drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
         
 
