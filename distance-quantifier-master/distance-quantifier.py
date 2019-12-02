@@ -81,19 +81,25 @@ def getBoxDistance(disparity_scaled, box):
     #width = int(width * 0.4)
 
     # Loops through all box pixels to produce an average disparity
-    for x in range(left, left + width):
-        for y in range(top, top + height):
-            if(y < imgL.shape[0] and x < imgL.shape[1]):
-                if(disparity_scaled[y, x] > 0):
-                    currentDisparity = disparity_scaled[y, x]
-                    totalDisparity = totalDisparity + currentDisparity
-                    totalCount += 1
-    if(totalCount > 0):
-        averageDisparity = totalDisparity / totalCount
-        averageDistance = (f * B) / averageDisparity
-        return averageDistance
-    else:
-        print("no values")
+    #for x in range(left, left + width):
+     #   for y in range(top, top + height):
+      #      if(y < imgL.shape[0] and x < imgL.shape[1]):
+       #         if(disparity_scaled[y, x] > 0):
+        #            currentDisparity = disparity_scaled[y, x]
+         #           totalDisparity = totalDisparity + currentDisparity
+          #          totalCount += 1
+          
+    #if(totalCount > 0):
+     #   averageDisparity = totalDisparity / totalCount
+      #  averageDistance = (f * B) / averageDisparity
+       # return averageDistance
+
+    disparity = disparity_scaled[int(top+(height/2)), int(left+(width/2))]
+    print(disparity)
+    if(disparity > 0):
+        distance = (f*B)/disparity
+        return distance
+       
     return 0       
 
 
@@ -123,7 +129,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = "1506942604.475373"; 
+skip_forward_file_pattern = ""#"1506942604.475373"; 
 
 
 

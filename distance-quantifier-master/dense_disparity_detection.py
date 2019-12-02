@@ -19,7 +19,7 @@ import numpy as np
 #setup disparity stereo processor parameters
 SADWindowSize = 3
 minDisparity = 0                   # Minimum possible disparity value (default 0)
-numDisparities = 160               # Maximum disparity minus minimum disparity (default 16)
+numDisparities = 256               # Maximum disparity minus minimum disparity (default 16)
 blockSize = 5                      # Matched block size - must be odd (default 3)
 P1 = 8 * 1 * SADWindowSize ** 2    # Controls disparity smoothness (default 0)
 P2 = 32 * 1 * SADWindowSize ** 2   # Controls disparity smoothness (default 0)
@@ -34,7 +34,7 @@ mode = cv2.STEREO_SGBM_MODE_SGBM
 # So can remove the function and place values in SGBM definition instead
 
 # setup the disparity stereo processor to find a maximum of 128 disparity values
-max_disparity = 128
+max_disparity = 256
 
 # setup the StereoSGBM object
 stereoProcessor = cv2.StereoSGBM_create(
@@ -57,7 +57,7 @@ stereoProcessor = cv2.StereoSGBM_create(
 # CLAHE = Constrast Limited Adaptive Histogram Equalisation
 clahe = cv2.createCLAHE(
     clipLimit = 2.0,
-    titleGridSize=(8,8)
+    tileGridSize=(8,8)
     )
 
 
@@ -93,7 +93,7 @@ def disparity(imgL, imgR):
 
     # Scale image to the full 0->255 range based on the number
     # of disparities in use for the stereo part
-    disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
+    # disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
     
     # return the image
     return disparity_scaled
