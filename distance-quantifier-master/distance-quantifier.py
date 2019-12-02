@@ -58,6 +58,7 @@ def drawPred(image, class_name, confidence, box, colour):
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
     cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,0), 1)
+    
 #####################################################################
 # Gets the distance of an object  in an image based on the area around it
 # disparity_scaled: scaled version of the disparity map
@@ -66,8 +67,6 @@ def getBoxDistance(disparity_scaled, box):
     # Get information about box
     left = box[0]; top = box[1]
     width = box[2]; height = box[3]
-    right = left + width
-    bottom = top + height
 
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
@@ -76,14 +75,14 @@ def getBoxDistance(disparity_scaled, box):
     totalCount = 0
 
     # Trim the box to hopefully isolate object and reduce background noise
-    right -= int((right - left) * 0.4)
-    left += int((right - left) * 0.4)
-    bottom -= int((bottom - top) * 0.4)
-    top += int((bottom - top) * 0.4)
+    top += int(height * 0.2)
+    height = int(height * 0.4)
+    left += int(width * 0.2)
+    width = int(width * 0.4)
 
     # Loops through all box pixels to produce an average disparity
-    for x in range(left, right):
-        for y in range(top, bottom):
+    for x in range(left, left + width):
+        for y in range(top, top + height):
             if(y < imgL.shape[0] and x < imgL.shape[1]):
                 if(disparity_scaled[y, x] > 0):
                     currentDisparity = disparity_scaled[y, x]
