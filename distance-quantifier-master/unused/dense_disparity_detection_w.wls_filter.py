@@ -26,7 +26,7 @@ P2 = 32 * 1 * SADWindowSize ** 2   # Controls disparity smoothness (default 0)
 disp12MaxDiff = 1                  # Maximum allowed difference in the left-right disparity check
 preFilterCap = 63                  # Truncation value for the prefiltered image pixels
 uniquenessRatio = 15               # Margin in percentage by which the best (minimum) computed cost function value should "win" the second best value to consider the found match correct.
-speckleWindowSize = 4000           # Maximum size of smooth disparity regions to consider their noise and speckles invalidate
+speckleWindowSize = 0              # Maximum size of smooth disparity regions to consider their noise and speckles invalidate
 speckleRange = 2                   # Maximum disparity variation within each connected component
 mode = cv2.STEREO_SGBM_MODE_SGBM
 
@@ -36,8 +36,13 @@ mode = cv2.STEREO_SGBM_MODE_SGBM
 # setup the disparity stereo processor to find a maximum of 128 disparity values
 max_disparity = 128
 
+# setup the FILTER parameters for WLS-Filter (WLS-Filter obtains a hole free depth image)
+lmbda = 80000
+sigma = 1.2
+visual_multiplier = 1.0
+
 # setup the StereoSGBM object
-stereoProcessor = cv2.StereoSGBM_create(
+leftMatcher = cv2.StereoSGBM_create(
     minDisparity=minDisparity,
     numDisparities=numDisparities,
     blockSize=blockSize,
@@ -51,14 +56,8 @@ stereoProcessor = cv2.StereoSGBM_create(
     mode=mode
     )
 
-# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html
-
-# setup the adaptive histogram equalisation object - CLAHE object
-# CLAHE = Constrast Limited Adaptive Histogram Equalisation
-clahe = cv2.createCLAHE(
-    clipLimit = 2.0,
-    titleGridSize=(8,8)
-    )
+# setup the right_matcher (used for filtering the disparity image)
+rightMatcher = cv2.ximgproc.createRightMatcher(leftMatcher)
 
 
 
@@ -75,13 +74,24 @@ def disparity(imgL, imgR):
     grayR = np.power(grayR, 0.75).astype('uint8');
 
     # use histogram equalisation to improve contrast
-    grayL = clahe.apply(grayL)
-    grayR = clahe.apply(grayR)
+    grayL = cv2.equalizeHist(grayL)
+    grayR = cv2.equalizeHist(grayR)
+
+    # create a WLS_Filter and set some filter parameters
+    # used to obtain a hole free disparity map
+    wls_filter = cv2.ximgproc.createDisparityWLSFilter(matcher_left=leftMatcher)
+    wls_filter.setLambda(lmbda)
+    wls_filter.setSigmaColor(sigma)
+
+    # compute disparity
+    disparity_left = leftMatcher.compute(grayL, grayR)
+    disparity_right = rightMatcher.compute(grayR, grayL)
+    disparity = wls_filter.filter(disparity_left, grayL, None, disparity_right)
         
     # compute disparity image from undistorted and rectified stereo images
     # that we have loaded
     # (which for reasons best known to the OpenCV developers is returned scaled by 16)
-    disparity = stereoProcessor.compute(grayL, grayR)
+
 
     # scale the disparity to 8-bit for viewing
     # divide by 16 and convert to 8-bit image (then range of values should
@@ -94,7 +104,7 @@ def disparity(imgL, imgR):
     # Scale image to the full 0->255 range based on the number
     # of disparities in use for the stereo part
     disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
-    
+
     # return the image
     return disparity_scaled
 

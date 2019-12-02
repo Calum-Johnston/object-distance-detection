@@ -75,10 +75,10 @@ def getBoxDistance(disparity_scaled, box):
     totalCount = 0
 
     # Trim the box to hopefully isolate object and reduce background noise
-    top += int(height * 0.2)
-    height = int(height * 0.4)
-    left += int(width * 0.2)
-    width = int(width * 0.4)
+    #top += int(height * 0.2)
+    #height = int(height * 0.4)
+    #left += int(width * 0.2)
+    #width = int(width * 0.4)
 
     # Loops through all box pixels to produce an average disparity
     for x in range(left, left + width):
@@ -91,7 +91,9 @@ def getBoxDistance(disparity_scaled, box):
     if(totalCount > 0):
         averageDisparity = totalDisparity / totalCount
         averageDistance = (f * B) / averageDisparity
-        return averageDistance 
+        return averageDistance
+    else:
+        print("no values")
     return 0       
 
 
@@ -198,14 +200,18 @@ for filename_left in left_file_list:
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            box.append(getBoxDistance(disparity, box))
+            distance = getBoxDistance(disparity, box)
+            if(distance != 0):
+                box.append(distance)
+                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+
         
         # sorts the boxes as to draw the closest box first
-        boxes.sort(key = lambda box: box[4], reverse = True)
+        #boxes.sort(key = lambda box: box[4], reverse = True)
 
         # draw the boxes around the objects (label with data)
-        for box in boxes:
-            drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+        #for box in boxes:
+            #drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
 
         #################################################################################
