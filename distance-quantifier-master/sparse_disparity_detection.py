@@ -102,7 +102,7 @@ def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
-        disparity = abs((ptL[0] + top) - ptR[0])
+        disparity = abs((ptL[0] + left) - ptR[0])
         if(disparity > 0):
             totalDisparity += disparity
             count += 1

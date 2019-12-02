@@ -200,14 +200,17 @@ for filename_left in left_file_list:
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            box.append(getBoxDistance(box, imgL, imgR))
+            distance = getBoxDistance(box, imgL, imgR)
+            if(distance != 0):
+                box.append(getBoxDistance(box, imgL, imgR))
+                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
         
         # sorts the boxes as to draw the closest box first
-        boxes.sort(key = lambda box: box[4], reverse = True)
+        #boxes.sort(key = lambda box: box[4], reverse = True)
 
         # draw the boxes around the objects (label with data)
-        for box in boxes:
-            drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+        #for box in boxes:
+         #   drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
 
         #################################################################################
