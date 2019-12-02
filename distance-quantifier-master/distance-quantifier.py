@@ -205,12 +205,13 @@ for filename_left in left_file_list:
         ################################################################################
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
+            print("Object detected")
             box = boxes[detected_object]
             distance = getBoxDistance(disparity, box)
             if(distance != 0):
                 box.append(distance)
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-
+        print()
         
         # sorts the boxes as to draw the closest box first
         #boxes.sort(key = lambda box: box[4], reverse = True)
@@ -228,7 +229,7 @@ for filename_left in left_file_list:
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
-        cv2.imshow("Object Detection",imgL)
+        cv2.imshow("Object Detection v1",imgL)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000

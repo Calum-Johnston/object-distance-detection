@@ -104,9 +104,6 @@ def disparity(imgL, imgR, f, B, top, left):
                         flags = cv2.DRAW_MATCHES_FLAGS_NOT_DRAW_SINGLE_POINTS)
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
 
-    cv2.imshow("Matches", display_matches)
-    cv2.waitKey()
-
     # Gets the average distance based on the best features mapped
     average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, top, left)
 

@@ -186,13 +186,9 @@ for filename_left in left_file_list:
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
 
-        # removes part of image that contains the car
-        
+        # get the part of imgL that we will remove later
+        # (Note: it isn't removed now as it affects YOLO object detection if done)
         removedImgL = imgL[410:544,0:imgL.shape[1]]
-        imgL = imgL[0:410,0:imgL.shape[1]]
-        imgR = imgR[0:410,0:imgR.shape[1]]
- 
-
 
 
         ################################################################################
@@ -205,25 +201,32 @@ for filename_left in left_file_list:
         ################################################################################
         # Resulting Distance Calculations + Drawing 
         ################################################################################
+
+        # crop images as to not include part of the car from which we are gathering distance
+        imgL = imgL[0:410,0:imgL.shape[1]]
+        imgR = imgR[0:410,0:imgR.shape[1]]
+        
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
             distance = getBoxDistance(box, imgL, imgR)
-            if(distance != 0):
-                box.append(getBoxDistance(box, imgL, imgR))
+            box.append(getBoxDistance(box, imgL, imgR))
 
-        # draw each box onto the image
-        # Done in seperate loop as previous to ensure 
+        # draw each box onto the image - as long as they have some distanc
+        # - as long as they have some distance (box[4])
+        # - as long as they're not the car from which we are gathering distance (box[1] - represents top of car)
+        # done in seperate loop as previous to ensure no features of the boxes are matched
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-        
+            if(box[1] < 410 and box[4] > 0): 
+                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+            
         # sorts the boxes as to draw the closest box first
         #boxes.sort(key = lambda box: box[4], reverse = True)
 
         # draw the boxes around the objects (label with data)
         #for box in boxes:
-         #   drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+        #   drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
 
         
 
@@ -238,7 +241,7 @@ for filename_left in left_file_list:
         resultImg = np.concatenate((imgL, removedImgL), axis=0)
 
         # display image
-        cv2.imshow("Object Detection",resultImg)
+        cv2.imshow("Object Detection v2",resultImg)
 
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
