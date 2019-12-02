@@ -211,7 +211,6 @@ for filename_left in left_file_list:
             if(distance != 0):
                 box.append(distance)
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-        print()
         
         # sorts the boxes as to draw the closest box first
         #boxes.sort(key = lambda box: box[4], reverse = True)
