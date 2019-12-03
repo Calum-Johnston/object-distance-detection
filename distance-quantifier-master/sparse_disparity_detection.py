@@ -48,6 +48,7 @@ index_params= dict(algorithm = FLANN_INDEX_LSH,
 search_params = dict(checks=50)
 matcher = cv2.FlannBasedMatcher(index_params,search_params)
 
+
 #####################################################################
 # Performs feature mapping between two seperate images
 # imgL: image that contains the object to have features mapped against
@@ -118,9 +119,7 @@ def disparity(imgL, imgR, f, B, top, left):
 def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
     totalDisparity = 0
     count = 0
-
-    dic = {}
-    
+    #dic = {}
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
@@ -128,13 +127,13 @@ def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
         if(disparity > 0):
             totalDisparity += disparity
             count += 1
-            if(disparity not in dic):
-                dic[disparity] = 1
-            else:
-                dic[disparity] += 1
-    for key, value in dic.items():
-        print(key, "->", (f*B) / key , " , " , value)
-    print()
+            #if(disparity not in dic):
+                #dic[disparity] = 1
+            #else:
+                #dic[disparity] += 1
+    #for key, value in dic.items():
+        #print(key, "->", (f*B) / key , " , " , value)
+    #print()
     if(count > 0): 
         averageDisparity = totalDisparity / count
         averageDistance = (f * B) / averageDisparity
