@@ -1,6 +1,6 @@
 #####################################################################
 
-# Example : compute SGBM disparity of two images
+# dense_disparity_detection_wls_filter : compute SGBM disparity of two images
 
 # Author : Calum Johnston, calum.p.johnston@durham.ac.uk
 
@@ -59,6 +59,14 @@ leftMatcher = cv2.StereoSGBM_create(
 # setup the right_matcher (used for filtering the disparity image)
 rightMatcher = cv2.ximgproc.createRightMatcher(leftMatcher)
 
+# https://opencv-python-tutroals.readthedocs.io/en/latest/py_tutorials/py_imgproc/py_histograms/py_histogram_equalization/py_histogram_equalization.html
+
+# setup the adaptive histogram equalisation object - CLAHE object
+# CLAHE = Constrast Limited Adaptive Histogram Equalisation
+clahe = cv2.createCLAHE(
+    clipLimit = 2.0,
+    tileGridSize=(8,8)
+    )
 
 
 
@@ -74,8 +82,8 @@ def disparity(imgL, imgR):
     grayR = np.power(grayR, 0.75).astype('uint8');
 
     # use histogram equalisation to improve contrast
-    grayL = cv2.equalizeHist(grayL)
-    grayR = cv2.equalizeHist(grayR)
+    grayL = clahe.apply(grayL)
+    grayR = clahe.apply(grayR)
 
     # create a WLS_Filter and set some filter parameters
     # used to obtain a hole free disparity map
@@ -103,7 +111,7 @@ def disparity(imgL, imgR):
 
     # Scale image to the full 0->255 range based on the number
     # of disparities in use for the stereo part
-    disparity_scaled = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
+    disparity_view = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
 
     # return the image
     return disparity_scaled

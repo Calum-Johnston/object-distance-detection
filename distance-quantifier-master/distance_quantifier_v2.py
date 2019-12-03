@@ -129,7 +129,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = ""#"1506942604.475373"; 
+skip_forward_file_pattern = "1506942604.475373"; 
 
 
 
@@ -234,8 +234,7 @@ for filename_left in left_file_list:
             box = boxes[detected_object]
             distance = getBoxDistance(box, histo_imgL, histo_imgR)
             distance2 = getBoxDistance(box, imgL, imgR)
-            box.append((distance + distance2)/2)
-            
+            box.append((distance + distance2)/2)            
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
