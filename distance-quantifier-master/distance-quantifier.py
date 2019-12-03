@@ -58,6 +58,7 @@ def drawPred(image, class_name, confidence, box, colour):
     cv2.rectangle(image, (left, top - round(1.5*labelSize[1])),
         (left + round(1.5*labelSize[0]), top + baseLine), (255, 255, 255), cv2.FILLED)
     cv2.putText(image, label, (left, top), cv2.FONT_HERSHEY_SIMPLEX, 0.4, (0,0,0), 1)
+
     
 #####################################################################
 # Gets the distance of an object  in an image based on the area around it
@@ -65,41 +66,74 @@ def drawPred(image, class_name, confidence, box, colour):
 # box: image parameters for object detection
 def getBoxDistance(disparity_scaled, box):
     # Get information about box
-    left = box[0]; top = box[1]
+    # NOTE: left must be > 1
+    left = max(box[0], 128); top = box[1]
     width = box[2]; height = box[3]
 
-    f = camera_focal_length_px
-    B = stereo_camera_baseline_m
+    # Check to see if the box is part of the car or not
+    if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]):
 
-    totalDisparity = 0
-    totalCount = 0
+        # setup camera variables 
+        f = camera_focal_length_px
+        B = stereo_camera_baseline_m
 
-    # Trim the box to hopefully isolate object and reduce background noise
-    #top += int(height * 0.2)
-    #height = int(height * 0.4)
-    #left += int(width * 0.2)
-    #width = int(width * 0.4)
+        # get the centre coordinates of the object
+        centre_point_X = int(left+(width/2))
+        centre_point_Y = int(top+(height/2))
 
-    # Loops through all box pixels to produce an average disparity
-    #for x in range(left, left + width):
-     #   for y in range(top, top + height):
-      #      if(y < imgL.shape[0] and x < imgL.shape[1]):
-       #         if(disparity_scaled[y, x] > 0):
-        #            currentDisparity = disparity_scaled[y, x]
-         #           totalDisparity = totalDisparity + currentDisparity
-          #          totalCount += 1
-          
-    #if(totalCount > 0):
-     #   averageDisparity = totalDisparity / totalCount
-      #  averageDistance = (f * B) / averageDisparity
-       # return averageDistance
+        # setup variables:
+        # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
+        # nonZeroCount = used to ignore any 0 disparity values
+        # sigma = used as sigma calculation in generating kernel
+        # arr = used to store disparity values for the central pixels of the object (same size as kernel)
+        # 
+        centre_to_edge = 8
+        nonZeroCount = 0
+        sigma = 1
+        arr = []
 
-    disparity = disparity_scaled[int(top+(height/2)), int(left+(width/2))]
-    if(disparity > 0):
-        distance = (f*B)/disparity
-        return distance
-       
-    return 0       
+        # get the gaussian kernel for defined dimensions
+        kernel = gkern((centre_to_edge * 2) + 1, sigma)
+
+        # get the disparity values for the central block of pixels and create a 2D list of them
+        for x in range(centre_point_X - centre_to_edge, centre_point_X + centre_to_edge + 1):
+            newLst = []
+            for y in range(centre_point_Y - centre_to_edge, centre_point_Y + centre_to_edge + 1):
+                newLst.append(disparity_scaled[y, x])
+                if(disparity_scaled[y,x] > 0):
+                    nonZeroCount += 1
+            arr.append(newLst)
+
+        # calculate the average distance of the object
+        # - Convolute the kernel with the arr
+        # - Sum the elements of the produced matrix
+        # - Divide by the number of non-zero disparity values
+        if(nonZeroCount > 0):
+            aver_Dis = sum(np.convolve(np.ndarray.flatten(kernel), np.ndarray.flatten(np.array(arr)))) / nonZeroCount
+            if(aver_Dis > 0):
+                averageDistance = (f * B) / aver_Dis
+                return averageDistance
+
+        # If no disparity values > 0 were found, simply return 0 (it will hence not be drawn)
+        return 0
+
+    # If the object is the car, simply return 0 (it will hence not be drawn)
+    return 0
+
+
+#####################################################################
+# Returns a gaussian kernel to the image of size n by n
+# size = the distance from the centre of the kernel to the edge
+# box = the sigma value for calculating the kernel
+def gkern(size=3,sigma=1):
+    center=(int)(size/2)
+    kernel=np.zeros((size,size))
+    for i in range(size):
+       for j in range(size):
+          diff=np.sqrt((i-center)**2+(j-center)**2)
+          kernel[i,j]=np.exp(-(diff**2)/(2*sigma**2))
+    return kernel/np.sum(kernel)
+    
 
 
 
@@ -131,7 +165,6 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 skip_forward_file_pattern = "1506942604.475373"; 
 
 
-
 ################################################################################
 # Initialisation of image parameters 
 
@@ -141,7 +174,7 @@ camera_focal_length_m = 4.8 / 1000          # focal length in metres (4.8 mm)
 stereo_camera_baseline_m = 0.2090607502     # camera baseline in metres
 
 image_centre_h = 262.0;
-image_cent4re_w = 474.5;
+image_centre_w = 474.5;
 
 
 
@@ -177,7 +210,7 @@ for filename_left in left_file_list:
         ################################################################################
         # Setup of windows, images, timers, etc
         ################################################################################
-        # start a timer (to see how long processing and display takes)
+        # start a timer and convert to ms. (to see how long processing and display takes)
         start_t = cv2.getTickCount()
 
         # read left and right images
@@ -189,7 +222,7 @@ for filename_left in left_file_list:
         # YOLO Object Detection 
         ################################################################################
         # Gets the information about objects
-        classIDs, classes, confidences, boxes, t = yolo.yolo(imgL)
+        classIDs, classes, confidences, boxes = yolo.yolo(imgL)
 
 
         ################################################################################
@@ -204,33 +237,26 @@ for filename_left in left_file_list:
         ################################################################################
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
-            print("Object detected")
             box = boxes[detected_object]
             distance = getBoxDistance(disparity, box)
             if(distance != 0):
                 box.append(distance)
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
         
-        # sorts the boxes as to draw the closest box first
-        #boxes.sort(key = lambda box: box[4], reverse = True)
-
-        # draw the boxes around the objects (label with data)
-        #for box in boxes:
-            #drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-
 
         #################################################################################
         # Output of image
         #################################################################################
+        # stop the timer and convert to ms. (to see how long processing and display takes)
+        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
+
         #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
+        label = 'Inference time: %.2f ms' % (stop_t)
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
         cv2.imshow("Object Detection v1",imgL)
 
-        # stop the timer and convert to ms. (to see how long processing and display takes)
-        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
-
+    
         # wait for user input till next image
         cv2.waitKey()

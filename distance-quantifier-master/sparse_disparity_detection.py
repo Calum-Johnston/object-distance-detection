@@ -68,9 +68,6 @@ def disparity(imgL, imgR, f, B, top, left):
         imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
         imgR = cv2.copyMakeBorder(imgR, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT, value=(255, 255, 255))
 
-    # Convert to gray??
-
-    # Histogram equalisation??
 
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
@@ -106,7 +103,7 @@ def disparity(imgL, imgR, f, B, top, left):
 
     # Gets the average distance based on the best features mapped
     average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, top, left)
-
+    
     return average_distance
 
 
@@ -121,13 +118,23 @@ def disparity(imgL, imgR, f, B, top, left):
 def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
     totalDisparity = 0
     count = 0
+
+    dic = {}
+    
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
-        disparity = abs((ptL[0] + left) - ptR[0])
+        disparity = int(abs((ptL[0] + left) - ptR[0]))
         if(disparity > 0):
             totalDisparity += disparity
             count += 1
+            if(disparity not in dic):
+                dic[disparity] = 1
+            else:
+                dic[disparity] += 1
+    for key, value in dic.items():
+        print(key, "->", (f*B) / key , " , " , value)
+    print()
     if(count > 0): 
         averageDisparity = totalDisparity / count
         averageDistance = (f * B) / averageDisparity

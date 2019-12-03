@@ -136,6 +136,4 @@ def yolo(img):
     # remove the bounding boxes with low confidenc
     classIDs, confidences, boxes = postprocess(img, results, confThreshold, nmsThreshold)
 
-    t, _ = net.getPerfProfile()
-
-    return classIDs, classes, confidences, boxes, t
+    return classIDs, classes, confidences, boxes, 

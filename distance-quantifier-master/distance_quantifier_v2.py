@@ -81,10 +81,10 @@ def getBoxDistance(box, imgL, imgR):
     # Trim the box to hopefully isolate object and reduce background noise (by 20%)
     # (note, only do so if box is already of a certain size)
     #if(height > 100 and width > 100):
-       # top += int(height * 0.2)
+        #top += int(height * 0.2)
         #height = int(height * 0.6)
-       # left += int(width * 0.2)
-       # width = int(width * 0.6)
+        #left += int(width * 0.2)
+        #width = int(width * 0.6)
 
     # Ensure box isn't out of bounds of the image
     top = max(0, top)
@@ -143,7 +143,7 @@ camera_focal_length_m = 4.8 / 1000          # focal length in metres (4.8 mm)
 stereo_camera_baseline_m = 0.2090607502     # camera baseline in metres
 
 image_centre_h = 262.0;
-image_cent4re_w = 474.5;
+image_centre_w = 474.5;
 
 
 
@@ -189,12 +189,34 @@ for filename_left in left_file_list:
         # copy imgL (while it's unused) - to be used for drawing boxes on later
         result_imgL = imgL.copy()
 
+        
+        ################################################################################
+        # Pre-processing of images (to be used later)
+        ################################################################################
+        # convert to grayscale 
+        # N.B. need to do for both as both are 3-channel images
+        grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
+        grayR = cv2.cvtColor(imgR,cv2.COLOR_BGR2GRAY);
+
+        # perform preprocessing - raise to the power, as this subjectively appears
+        # to improve subsequent disparity calculation
+        grayL = np.power(grayL, 0.75).astype('uint8');
+        grayR = np.power(grayR, 0.75).astype('uint8');
+        
+        # setup the adaptive histogram equalisation object - CLAHE object
+        # CLAHE = Constrast Limited Adaptive Histogram Equalisation
+        clahe = cv2.createCLAHE(clipLimit = 2.0, tileGridSize=(8,8))
+        
+        # Perform histogram equalisation on each image
+        histo_imgL = clahe.apply(grayL)
+        histo_imgR = clahe.apply(grayR)
+        
 
         ################################################################################
         # YOLO Object Detection 
         ################################################################################
         # Gets the information about objects
-        classIDs, classes, confidences, boxes, t = yolo.yolo(imgL)
+        classIDs, classes, confidences, boxes = yolo.yolo(imgL)
 
 
         ################################################################################
@@ -206,10 +228,14 @@ for filename_left in left_file_list:
         imgR = imgR[0:410,0:imgR.shape[1]]
         
         # for each box (representing one object) get it's distance
+        # - we calculate average distance based on images as they normally are, then on histogram equalised versions
+        # - this is then averaged to give the distance (from testing seemed to give more accurate distances)
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            distance = getBoxDistance(box, imgL, imgR)
-            box.append(getBoxDistance(box, imgL, imgR))
+            distance = getBoxDistance(box, histo_imgL, histo_imgR)
+            distance2 = getBoxDistance(box, imgL, imgR)
+            box.append((distance + distance2)/2)
+            
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
@@ -225,15 +251,15 @@ for filename_left in left_file_list:
         #################################################################################
         # Output of image
         #################################################################################
+        # stop the timer and convert to ms. (to see how long processing and display takes)
+        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
+        
         #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        label = 'Inference time: %.2f ms' % (t * 1000.0 / cv2.getTickFrequency())
-        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        label = 'Inference time: %.2f ms' % (stop_t)
+        cv2.putText(result_imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # display image
         cv2.imshow("Object Detection v2",result_imgL)
-
-        # stop the timer and convert to ms. (to see how long processing and display takes)
-        stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
         # wait for user input till next image
         cv2.waitKey()
