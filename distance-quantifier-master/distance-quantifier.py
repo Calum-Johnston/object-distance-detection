@@ -233,6 +233,14 @@ for filename_left in left_file_list:
         # read left and right images
         imgL = cv2.imread(full_path_filename_left, cv2.IMREAD_COLOR)
         imgR = cv2.imread(full_path_filename_right, cv2.IMREAD_COLOR)
+
+
+        ################################################################################
+        # PRE-PROCESSING
+        ################################################################################
+        # perform edge enhancement on the image using a generated kernel
+        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
+        im = cv2.filter2D(imgL, -1, kernel)
         
         
         ################################################################################
@@ -240,7 +248,23 @@ for filename_left in left_file_list:
         ################################################################################
         # Gets the information about objects
         classIDs, classes, confidences, boxes = yolo.yolo(imgL)
+        classIDs1, classes1, confidences1, boxes1 = yolo.yolo(im)
 
+        # Combine the two detections to produce total objects
+        addBox = True
+        count = 0;
+        for box1 in boxes1:
+            addBox = True
+            for box in boxes:
+                if (box1[0] - 10 <= box[0] <= box1[0] + 10) and (box1[1] - 10 <= box[1] <= box1[1] + 10) and (box1[2] - 10 <= box[2] <= box1[2] + 10) and (box1[3] - 10 <= box[3] <= box1[3] + 10):
+                    addBox = False
+                    break;
+            if(addBox == True):
+                classIDs.append(classIDs1[count])
+                confidences.append(confidences1[count])
+                boxes.append(box1)
+            count += 1 
+            
 
         ################################################################################
         # Stereo Disparity & Distance Calculation
