@@ -2,8 +2,9 @@
 
 # Example : calculates distances to nearby objects and displays this
 #  - performs YOLO (v3) object detection from a dataset of image files
-#  - calculates the disparity from the dataset of image files 
-#  - uses this information to display the required data
+#  - performs stereo disparity and calculates a disparity map from two rectified stereo images
+#  - calculates the disparity of each object using this map
+#  - uses this information to calculate distance of the object and display
 
 # Author: Calum Johnston, calum.p.johnston@durham.ac.uk
 # Credit to: Toby Breckon, toby.breckon@durham.ac.uk
@@ -25,11 +26,11 @@
 import cv2
 import numpy as np
 import os
-import dense_disparity_detection_wls_filter as dis
+import dense_disparity_detection as dis
 import yolo_detection as yolo
 
 ################################################################################
-# === DRAWING FUNCTIONS === #
+# === DRAWING + DISTANCE CALCULATION FUNCTIONS === #
 ################################################################################
 
 #####################################################################
@@ -66,58 +67,51 @@ def drawPred(image, class_name, confidence, box, colour):
 # box: image parameters for object detection
 def getBoxDistance(disparity_scaled, box):
     # Get information about box
-    # NOTE: left must be > 1
+    # NOTE: left must be at least 128
     left = max(box[0], 128); top = box[1]
     width = box[2]; height = box[3]
 
-    # Check to see if the box is part of the car or not
-    if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]):
+    # setup camera variables 
+    f = camera_focal_length_px
+    B = stereo_camera_baseline_m
 
-        # setup camera variables 
-        f = camera_focal_length_px
-        B = stereo_camera_baseline_m
+    # get the centre coordinates of the object
+    centre_point_X = int(left+(width/2))
+    centre_point_Y = int(top+(height/2))
 
-        # get the centre coordinates of the object
-        centre_point_X = int(left+(width/2))
-        centre_point_Y = int(top+(height/2))
+    # setup variables:
+    # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
+    # nonZeroCount = used to ignore any 0 disparity values
+    # sigma = used as sigma calculation in generating kernel
+    # arr = used to store disparity values for the central pixels of the object (same size as kernel) 
+    centre_to_edge = 8
+    nonZeroCount = 0
+    sigma = 1
+    arr = []
 
-        # setup variables:
-        # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
-        # nonZeroCount = used to ignore any 0 disparity values
-        # sigma = used as sigma calculation in generating kernel
-        # arr = used to store disparity values for the central pixels of the object (same size as kernel)
-        # 
-        centre_to_edge = 8
-        nonZeroCount = 0
-        sigma = 1
-        arr = []
+    # get the gaussian kernel for defined dimensions
+    kernel = gkern((centre_to_edge * 2) + 1, sigma)
 
-        # get the gaussian kernel for defined dimensions
-        kernel = gkern((centre_to_edge * 2) + 1, sigma)
+    # get the disparity values for the central block of pixels and create a 2D list of them
+    for x in range(centre_point_X - centre_to_edge, centre_point_X + centre_to_edge + 1):
+        newLst = []
+        for y in range(centre_point_Y - centre_to_edge, centre_point_Y + centre_to_edge + 1):
+            newLst.append(disparity_scaled[y, x])
+            if(disparity_scaled[y,x] > 0):
+                nonZeroCount += 1
+        arr.append(newLst)
 
-        # get the disparity values for the central block of pixels and create a 2D list of them
-        for x in range(centre_point_X - centre_to_edge, centre_point_X + centre_to_edge + 1):
-            newLst = []
-            for y in range(centre_point_Y - centre_to_edge, centre_point_Y + centre_to_edge + 1):
-                newLst.append(disparity_scaled[y, x])
-                if(disparity_scaled[y,x] > 0):
-                    nonZeroCount += 1
-            arr.append(newLst)
+    # calculate the average distance of the object
+    # - Convolute the kernel with the arr
+    # - Sum the elements of the produced matrix
+    # - Divide by the number of non-zero disparity values
+    if(nonZeroCount > 0):
+        aver_Dis = sum(np.convolve(np.ndarray.flatten(kernel), np.ndarray.flatten(np.array(arr)))) / nonZeroCount
+        if(aver_Dis > 0):
+            averageDistance = (f * B) / aver_Dis
+            return averageDistance
 
-        # calculate the average distance of the object
-        # - Convolute the kernel with the arr
-        # - Sum the elements of the produced matrix
-        # - Divide by the number of non-zero disparity values
-        if(nonZeroCount > 0):
-            aver_Dis = sum(np.convolve(np.ndarray.flatten(kernel), np.ndarray.flatten(np.array(arr)))) / nonZeroCount
-            if(aver_Dis > 0):
-                averageDistance = (f * B) / aver_Dis
-                return averageDistance
-
-        # If no disparity values > 0 were found, simply return 0 (it will hence not be drawn)
-        return 0
-
-    # If the object is the car, simply return 0 (it will hence not be drawn)
+    # If no disparity values > 0 were found, simply return 0 (it will hence not be drawn)
     return 0
 
 
@@ -162,7 +156,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = ""#"1506942604.475373"; 
+skip_forward_file_pattern = "1506942604.475373"; 
 
 
 ################################################################################
@@ -199,11 +193,6 @@ for filename_left in left_file_list:
     full_path_filename_left = os.path.join(full_path_directory_left, filename_left);
     full_path_filename_right = os.path.join(full_path_directory_right, filename_right);
 
-    # for sanity print out these filenames
-    print(full_path_filename_left);
-    print(full_path_filename_right);
-    print();
-
     # check the file is a PNG file (left) and check a correspondoning right image actually exists
     if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
 
@@ -229,20 +218,27 @@ for filename_left in left_file_list:
         # Stereo Disparity & Distance Calculation
         ################################################################################
         # Gets the disparity map for the left and right image
+        # NOTE: Pre-processing of images done in here
         disparity = dis.disparity(imgL, imgR)
 
 
         ################################################################################
         # Resulting Distance Calculations + Drawing 
         ################################################################################
+        # variable that stores the minimum distance drawn each time
+        min_distance = 1000
+        
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
             distance = getBoxDistance(disparity, box)
-            if(distance != 0):
+            if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (distance != 0):
                 box.append(distance)
                 drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-        
+
+                # update minimum distance
+                if(distance < min_distance):
+                    min_distance = distance
 
         #################################################################################
         # Output of image
@@ -254,9 +250,12 @@ for filename_left in left_file_list:
         label = 'Inference time: %.2f ms' % (stop_t)
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
-        # display image
-        cv2.imshow("Object Detection v1",imgL)
+        # print file names and minimum distance to standard output
+        print(filename_left)
+        print(filename_right , " : nearest detected scene object (%.2fm)" % (min_distance))
 
+        # display image showing object detection w/distances
+        cv2.imshow("Object Detection v1",imgL)
     
         # wait for user input till next image
         cv2.waitKey()

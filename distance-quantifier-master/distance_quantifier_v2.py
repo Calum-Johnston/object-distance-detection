@@ -2,8 +2,9 @@
 
 # Example : calculates distances to nearby objects and displays this
 #  - performs YOLO (v3) object detection from a dataset of image files
-#  - calculates the disparity from the dataset of image files 
-#  - uses this information to display the required data
+#  - for each object performs FLANN matching using ORB
+#  - the disparity at each feature point of the object is calculated
+#  - uses this information to calculate distance of the object and display
 
 # Author: Calum Johnston, calum.p.johnston@durham.ac.uk
 # Credit to: Toby Breckon, toby.breckon@durham.ac.uk
@@ -29,13 +30,8 @@ import sparse_disparity_detection as dis
 import yolo_detection as yolo
 
 ################################################################################
-# === YOLO Object Detection Functions === #
+# === DRAWING + DISTANCE CALCULATION FUNCTIONS === #
 ################################################################################
-
-################################################################################
-# dummy on trackbar callback function
-def on_trackbar(val):
-    return
 
 #####################################################################
 # Draw the predicted bounding box on the specified image
@@ -67,24 +63,24 @@ def drawPred(image, class_name, confidence, box, colour):
 #####################################################################
 # Gets the distance of an object in an image based on the area around it
 # box: image parameters for object detection
-# imgL: image in which the object will be cropped from
-# imgR: image to compare the object against for feature detection
-def getBoxDistance(box, imgL, imgR):
+# imgL: left image in which the object will be cropped from
+# imgR: right image to compare the object against for feature detection
+def getBoxDistance(box, object_imgL, imgR):
     # Get information about box
     left = box[0]; top = box[1]
     width = box[2]; height = box[3]
 
+    # if box is too small features won't be detected properly, so we increase it's size 
+    if(height < 50):
+        top -= 20
+        height += 40
+    if(width < 50):
+        left -= 20
+        width += 40
+
     # Get details of camera, to be used to calculate distance
     f = camera_focal_length_px
     B = stereo_camera_baseline_m
-
-    # Trim the box to hopefully isolate object and reduce background noise (by 20%)
-    # (note, only do so if box is already of a certain size)
-    #if(height > 100 and width > 100):
-        #top += int(height * 0.2)
-        #height = int(height * 0.6)
-        #left += int(width * 0.2)
-        #width = int(width * 0.6)
 
     # Ensure box isn't out of bounds of the image
     top = max(0, top)
@@ -97,7 +93,7 @@ def getBoxDistance(box, imgL, imgR):
     cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
 
     # Gets the distance of the object using the disparity of only that object
-    distance = dis.disparity(cropImgL, cropImgR, f, B, top, left)
+    distance = dis.disparity(cropImgL, cropImgR, f, B, 20, left)
 
     return distance
     
@@ -130,8 +126,6 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
 skip_forward_file_pattern = "1506942604.475373"; 
-
-
 
 
 ################################################################################
@@ -168,11 +162,6 @@ for filename_left in left_file_list:
     full_path_filename_left = os.path.join(full_path_directory_left, filename_left);
     full_path_filename_right = os.path.join(full_path_directory_right, filename_right);
 
-    # for sanity print out these filenames
-    print(full_path_filename_left);
-    print(full_path_filename_right);
-    print();
-
     # check the file is a PNG file (left) and check a correspondoning right image actually exists
     if ('.png' in filename_left) and (os.path.isfile(full_path_filename_right)) :
 
@@ -193,6 +182,7 @@ for filename_left in left_file_list:
         ################################################################################
         # Pre-processing of images (to be used later)
         ################################################################################
+        # DISPARITY CALCULATIONS
         # convert to grayscale 
         # N.B. need to do for both as both are 3-channel images
         grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
@@ -210,7 +200,12 @@ for filename_left in left_file_list:
         # Perform histogram equalisation on each image
         histo_imgL = clahe.apply(grayL)
         histo_imgR = clahe.apply(grayR)
-        
+
+        # OBJECT DETECTION CALCULATIONS
+        # Perform edge enhancement on image by sharpening
+        #kernel = np.array([[-1,-1,-1], [-1,3,-1], [-1,-1,-1]])
+        #sharpened_imgL = cv2.filter2D(imgL, -5, kernel)
+
 
         ################################################################################
         # YOLO Object Detection 
@@ -222,19 +217,27 @@ for filename_left in left_file_list:
         ################################################################################
         # Resulting Distance Calculations + Drawing 
         ################################################################################
-
-        # crop images as to not include part of the car from which we are gathering distance
-        imgL = imgL[0:410,0:imgL.shape[1]]
-        imgR = imgR[0:410,0:imgR.shape[1]]
-        
+        # variable that stores the minimum distance drawn each time 
+        min_distance = 1000
+    
         # for each box (representing one object) get it's distance
         # - we calculate average distance based on images as they normally are, then on histogram equalised versions
         # - this is then averaged to give the distance (from testing seemed to give more accurate distances)
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            distance = getBoxDistance(box, histo_imgL, histo_imgR)
-            distance2 = getBoxDistance(box, imgL, imgR)
-            box.append((distance + distance2)/2)            
+            distance_normal = getBoxDistance(box, imgL, imgR)
+            distance_histo = 0 #= getBoxDistance(box, histo_imgL, histo_imgR)
+            print(distance_normal)
+            print(distance_histo)
+            if(distance_normal == 0 and distance_histo != 0):
+                box.append(distance_histo)
+            elif(distance_histo == 0 and distance_normal != 0):
+                box.append(distance_normal)
+            elif(distance_histo != 0 and distance_normal != 0):
+                distance_total = (distance_normal + distance_histo) / 2
+                box.append(distance_total)
+            else:
+                box.append(0)
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
@@ -245,7 +248,10 @@ for filename_left in left_file_list:
             box = boxes[detected_object]
             if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (box[4] > 0): 
                 drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-            
+
+                # update minimum distance
+                if(box[4] < min_distance):
+                    min_distance = box[4]
 
         #################################################################################
         # Output of image
@@ -257,7 +263,11 @@ for filename_left in left_file_list:
         label = 'Inference time: %.2f ms' % (stop_t)
         cv2.putText(result_imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
-        # display image
+        # print file names and minimum distance to standard output
+        print(filename_left)
+        print(filename_right , " : nearest detected scene object (%.2fm)" % (min_distance))
+
+        # display image showing object detection w/distances
         cv2.imshow("Object Detection v2",result_imgL)
 
         # wait for user input till next image

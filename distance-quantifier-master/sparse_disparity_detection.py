@@ -55,21 +55,10 @@ matcher = cv2.FlannBasedMatcher(index_params,search_params)
 # imgR: image that contains scene to have object features (imgL) matched to
 # f: focal length in pixels (camera parameter)
 # B: camera baseline in metres (camera parameter)
-# startX: corresponding starting x coordinate from imgL (cropped object image) to original image
-def disparity(imgL, imgR, f, B, top, left):
-
-    # Pad the image with bits if too small
-    # (done due to the default scale settings on ORB)
-    if(imgL.shape[0] < 250):
-        padHeight = int((250 - imgL.shape[0]) / 2)
-        imgL = cv2.copyMakeBorder(imgL, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT)
-        imgR = cv2.copyMakeBorder(imgR, padHeight, padHeight, 0, 0, cv2.BORDER_CONSTANT, value=(255, 255, 255))
-    if(imgL.shape[1] < 250):
-        padWidth = int((250 - imgL.shape[1]) / 2)
-        imgL = cv2.copyMakeBorder(imgL, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT)
-        imgR = cv2.copyMakeBorder(imgR, 0, 0, padWidth, padWidth, cv2.BORDER_CONSTANT, value=(255, 255, 255))
-
-
+# increaseSize: size the area of the object has been increased (if image was too small)
+# left: corresponding x value in original image where object area starts
+def disparity(imgL, imgR, f, B, increaseSize, left):
+    
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
     kpR, desR = feature_object.detectAndCompute(imgR,None)
@@ -85,14 +74,20 @@ def disparity(imgL, imgR, f, B, top, left):
     # filter matches so some matches aren't included
     # - using Lowe's ratio test (rejects poor matches by computing ratio
     # between best and the second-best match)
-    # - by determining whether they lie on a similar y axis 
+    # - by determining whether they lie on a similar y axis
+    # - by determining whether they were outside the box containing the object
     try:
         for (m,n) in matches:
             if m.distance < 0.7*n.distance:
                 pt1 = kpL[m.queryIdx].pt  #coordinates of left image feature
                 pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
                 if (pt1[1] == pt2[1]):
-                    good_matches.append(m)
+
+                    # check the match is for the object in question
+                    if(pt1[0] > 20 and pt1[0] < imgL.shape[0] - 20 and
+                       pt1[1] > 20 and pt1[1] < imgL.shape[1] - 20):
+                        good_matches.append(m)
+                    
     except ValueError:
         print("caught error - no matches from current frame")
 
@@ -103,7 +98,7 @@ def disparity(imgL, imgR, f, B, top, left):
     display_matches = cv2.drawMatches(imgL,kpL,imgR,kpR,good_matches,None,**draw_params)
 
     # Gets the average distance based on the best features mapped
-    average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, top, left)
+    average_distance = getAverageDistances(good_matches, kpL, kpR, f, B, left)
     
     return average_distance
 
@@ -115,27 +110,24 @@ def disparity(imgL, imgR, f, B, top, left):
 # kpR: list of keypoints found in the second image (imgR)
 # f: focal length in pixels (camera parameter)
 # B: camera baseline in metres (camera parameter)
-# startX: corresponding starting x coordinate from imgL (cropped object image) to original image
-def getAverageDistances(good_matches, kpL, kpR, f, B, top, left):
-    totalDisparity = 0
-    count = 0
-    #dic = {}
+# left: corresponding x value in original image where object area starts
+def getAverageDistances(good_matches, kpL, kpR, f, B, left):
+    # variables definitions
+    disparity_total = 0         # counts sum of total disparity
+    disparity_count = 0         # counts number of times disparity is calculated at > 0
+
+    # determines the disparity for each match 
     for match in good_matches:
         ptL = kpL[match.queryIdx].pt  #coordinates of left image feature
         ptR = kpR[match.trainIdx].pt  # coordinates of right image features
         disparity = int(abs((ptL[0] + left) - ptR[0]))
         if(disparity > 0):
-            totalDisparity += disparity
-            count += 1
-            #if(disparity not in dic):
-                #dic[disparity] = 1
-            #else:
-                #dic[disparity] += 1
-    #for key, value in dic.items():
-        #print(key, "->", (f*B) / key , " , " , value)
-    #print()
-    if(count > 0): 
-        averageDisparity = totalDisparity / count
+            disparity_total += disparity
+            disparity_count += 1
+
+    # calculates average distances based on disparitys calculated
+    if(disparity_count > 0): 
+        averageDisparity = disparity_total / disparity_count
         averageDistance = (f * B) / averageDisparity
         return averageDistance
     return 0
