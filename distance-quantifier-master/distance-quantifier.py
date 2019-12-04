@@ -28,6 +28,7 @@ import numpy as np
 import os
 import dense_disparity_detection as dis
 import yolo_detection as yolo
+from collections import Counter
 
 ################################################################################
 # === DRAWING + DISTANCE CALCULATION FUNCTIONS === #
@@ -75,7 +76,7 @@ def getBoxDistance(disparity_scaled, box):
 
     # setup camera variables 
     f = camera_focal_length_px
-    B = stereo_camera_baseline_m
+    B = stereo_camera_baseline_m     
 
     # get the centre coordinates of the object
     centre_point_X = int(left+(width/2))
@@ -299,8 +300,8 @@ for filename_left in left_file_list:
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
         #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        label = 'Inference time: %.2f ms' % (stop_t)
-        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        #label = 'Inference time: %.2f ms' % (stop_t)
+        #cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # print file names and minimum distance to standard output
         print(filename_left)

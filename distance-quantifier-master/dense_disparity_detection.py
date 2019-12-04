@@ -74,7 +74,7 @@ def disparity(imgL, imgR):
     # to improve subsequent disparity calculation
     grayL = np.power(grayL, 0.75).astype('uint8');
     grayR = np.power(grayR, 0.75).astype('uint8');
-
+    
     # use histogram equalisation to improve contrast
     grayL = clahe.apply(grayL)
     grayR = clahe.apply(grayR)
@@ -95,7 +95,7 @@ def disparity(imgL, imgR):
 
     # Scale image to the full 0->255 range based on the number
     # of disparities in use for the stereo part
-    # disparity_view = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
+    disparity_view = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
     
     # return the image
     return disparity_scaled
