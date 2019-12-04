@@ -140,6 +140,13 @@ image_centre_h = 262.0;
 image_centre_w = 474.5;
 
 
+################################################################################
+# Initialisation of YOLO parameters
+
+# dataset defining what objects to include
+dataset = ["car", "bus", "truck", "person", "bicycle", "motorbike"]
+
+
 
 
 
@@ -224,20 +231,21 @@ for filename_left in left_file_list:
         # - we calculate average distance based on images as they normally are, then on histogram equalised versions
         # - this is then averaged to give the distance (from testing seemed to give more accurate distances)
         for detected_object in range(0, len(boxes)):
-            box = boxes[detected_object]
-            distance_normal = getBoxDistance(box, imgL, imgR)
-            distance_histo = 0 #= getBoxDistance(box, histo_imgL, histo_imgR)
-            print(distance_normal)
-            print(distance_histo)
-            if(distance_normal == 0 and distance_histo != 0):
-                box.append(distance_histo)
-            elif(distance_histo == 0 and distance_normal != 0):
-                box.append(distance_normal)
-            elif(distance_histo != 0 and distance_normal != 0):
-                distance_total = (distance_normal + distance_histo) / 2
-                box.append(distance_total)
-            else:
-                box.append(0)
+            if(classes[classIDs[detected_object]] in dataset): # check it's an object we want to track
+                box = boxes[detected_object]
+                distance_normal = getBoxDistance(box, imgL, imgR)
+                distance_histo = getBoxDistance(box, histo_imgL, histo_imgR)
+                if(distance_normal == 0 and distance_histo != 0):
+                    box.append(distance_histo)
+                elif(distance_histo == 0 and distance_normal != 0):
+                    box.append(distance_normal)
+                elif(distance_histo != 0 and distance_normal != 0):
+                    distance_total = (distance_normal + distance_histo) / 2
+                    box.append(distance_total)
+                else:
+                    box.append(0)
+
+            
 
         # draw each box onto the image - as long as they have some distanc
         # - as long as they have some distance (box[4])
@@ -246,12 +254,12 @@ for filename_left in left_file_list:
         # done in seperate loop as previous to ensure no features of the boxes are matched
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (box[4] > 0): 
-                drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-
-                # update minimum distance
-                if(box[4] < min_distance):
-                    min_distance = box[4]
+            if(classes[classIDs[detected_object]] in dataset):
+                if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (box[4] > 0): 
+                    drawPred(result_imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+                    # update minimum distance
+                    if(box[4] < min_distance):
+                        min_distance = box[4]
 
         #################################################################################
         # Output of image

@@ -65,6 +65,8 @@ def drawPred(image, class_name, confidence, box, colour):
 # Gets the distance of an object  in an image based on the area around it
 # disparity_scaled: scaled version of the disparity map
 # box: image parameters for object detection
+# radius: radius for amount of pixels to be calculated from the centre
+# recurse: boolean variable to determine whether we have called the function from within the function
 def getBoxDistance(disparity_scaled, box):
     # Get information about box
     # NOTE: left must be at least 128
@@ -83,11 +85,29 @@ def getBoxDistance(disparity_scaled, box):
     # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
     # nonZeroCount = used to ignore any 0 disparity values
     # sigma = used as sigma calculation in generating kernel
-    # arr = used to store disparity values for the central pixels of the object (same size as kernel) 
-    centre_to_edge = 8
-    nonZeroCount = 0
+    # arr = used to store disparity values for the central pixels of the object (same size as kernel)
+    # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
+    centre_to_edge = 1
     sigma = 1
+    nonZeroCount = 0
     arr = []
+    
+    # IMPORTANT PART - For smaller boxes surrounding objects we typically need to analysis a larger
+    # percentage of it's pixels to get a more accurate distance, and vice versa for larger boxes.
+    # The size is determined by cente_to_edge, so we edit that here
+    # centre_to_edge = determines size of the gaussian kernel used (total x/y dimension = 2*centre_to_edge+1)
+    if(min(width, height) < 30):
+        centre_to_edge = int(min(width, height) / 2)
+    elif(min(width, height) < 40):
+        centre_to_edge = int(min(width, height) / 3)
+    elif(min(width, height) < 50):
+        centre_to_edge = int(min(width, height) / 4)
+    elif(min(width, height) < 75):
+        centre_to_edge = int(min(width, height) / 8)
+    elif(min(width, height) < 100):
+        centre_to_edge = int(min(width, height) / 16)
+    else:
+        centre_to_edge = int(min(width, height) / 32)
 
     # get the gaussian kernel for defined dimensions
     kernel = gkern((centre_to_edge * 2) + 1, sigma)
@@ -96,9 +116,10 @@ def getBoxDistance(disparity_scaled, box):
     for x in range(centre_point_X - centre_to_edge, centre_point_X + centre_to_edge + 1):
         newLst = []
         for y in range(centre_point_Y - centre_to_edge, centre_point_Y + centre_to_edge + 1):
-            newLst.append(disparity_scaled[y, x])
-            if(disparity_scaled[y,x] > 0):
-                nonZeroCount += 1
+            if(x > 0 and x < disparity_scaled.shape[1] and y > 0 and y < disparity_scaled.shape[0]):
+                newLst.append(disparity_scaled[y, x])
+                if(disparity_scaled[y,x] > 0):
+                    nonZeroCount += 1
         arr.append(newLst)
 
     # calculate the average distance of the object
@@ -171,6 +192,13 @@ image_centre_h = 262.0;
 image_centre_w = 474.5;
 
 
+################################################################################
+# Initialisation of YOLO parameters
+
+# dataset defining what objects to include
+dataset = ["car", "bus", "truck", "person", "bicycle", "motorbike"]
+
+
 
 
 
@@ -231,14 +259,14 @@ for filename_left in left_file_list:
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
             box = boxes[detected_object]
-            distance = getBoxDistance(disparity, box)
-            if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (distance != 0):
-                box.append(distance)
-                drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
-
-                # update minimum distance
-                if(distance < min_distance):
-                    min_distance = distance
+            if(classes[classIDs[detected_object]] in dataset):  # check it's an object we want to track
+                distance = getBoxDistance(disparity, box)
+                if not(box[1] < 480 < box[1] + box[3] and box[0] < 512 < box[0] + box[2]) and (distance != 0):
+                    box.append(distance)
+                    drawPred(imgL, classes[classIDs[detected_object]], confidences[detected_object], box, (255, 178, 50))
+                    # update minimum distance
+                    if(distance < min_distance):
+                        min_distance = distance
 
         #################################################################################
         # Output of image
