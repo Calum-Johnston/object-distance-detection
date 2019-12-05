@@ -179,7 +179,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern =  "1506943678.479497"
+skip_forward_file_pattern =  "1506942474.483193"
 
 
 ################################################################################
@@ -265,10 +265,11 @@ for filename_left in left_file_list:
         # Resulting Distance Calculations + Drawing 
         ################################################################################
         # variable that stores the minimum distance drawn each time
-        min_distance = 1000
+        min_distance = 0
         
         # for each box (representing one object) get it's distance
         for detected_object in range(0, len(boxes)):
+            if(min_distance == 0): min_distance = 1000
             box = boxes[detected_object]
             if(classes[classIDs[detected_object]] in dataset):  # check it's an object we want to track
                 distance = getBoxDistance(disparity, box)
