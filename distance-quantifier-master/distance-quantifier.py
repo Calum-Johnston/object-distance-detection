@@ -179,7 +179,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern =  ""
+skip_forward_file_pattern =  "1506943678.479497"
 
 
 ################################################################################
@@ -240,32 +240,17 @@ for filename_left in left_file_list:
         ################################################################################
         # PRE-PROCESSING
         ################################################################################
-        # perform edge enhancement on the image using a generated kernel
-        kernel = np.array([[-1,-1,-1], [-1,9,-1], [-1,-1,-1]])
-        im = cv2.filter2D(imgL, -1, kernel)
-        
+        # OBJECT DETECTION CALCULATIONS
+        # Perform edge enhancement on image by sharpening
+        kernel = np.array([[-1,-1,-1], [-1,10,-1], [-1,-1,-1]])
+        enhanced_imgL = cv2.filter2D(imgL, -1, kernel)
+    
         
         ################################################################################
         # YOLO Object Detection 
         ################################################################################
         # Gets the information about objects
-        classIDs, classes, confidences, boxes = yolo.yolo(imgL)
-        classIDs1, classes1, confidences1, boxes1 = yolo.yolo(im)
-
-        # Combine the two detections to produce total objects
-        addBox = True
-        count = 0;
-        for box1 in boxes1:
-            addBox = True
-            for box in boxes:
-                if (box1[0] - 40 <= box[0] <= box1[0] + 40) and (box1[1] - 40 <= box[1] <= box1[1] + 40) and (box1[2] - 40 <= box[2] <= box1[2] + 40) and (box1[3] - 40 <= box[3] <= box1[3] + 40):
-                    addBox = False
-                    break;
-            if(addBox == True):
-                classIDs.append(classIDs1[count])
-                confidences.append(confidences1[count])
-                boxes.append(box1)
-            count += 1 
+        classIDs, classes, confidences, boxes = yolo.yolo(enhanced_imgL)
             
 
         ################################################################################
@@ -300,7 +285,7 @@ for filename_left in left_file_list:
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
-        Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+        #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
         label = 'Inference time: %.2f ms' % (stop_t)
         cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 

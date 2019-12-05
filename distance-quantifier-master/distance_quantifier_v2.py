@@ -70,13 +70,14 @@ def getBoxDistance(box, object_imgL, imgR):
     left = box[0]; top = box[1]
     width = box[2]; height = box[3]
 
+    # parameters to determine whether the object area has been increased
+    ext = 0
+
     # if box is too small features won't be detected properly, so we increase it's size 
-    if(height < 50):
-        top -= 20
-        height += 40
-    if(width < 50):
-        left -= 20
-        width += 40
+    if(height < 50 or width < 50):
+        top -= 50; height += 100
+        left -= 50; width += 100
+        ext = 50
 
     # Get details of camera, to be used to calculate distance
     f = camera_focal_length_px
@@ -86,6 +87,7 @@ def getBoxDistance(box, object_imgL, imgR):
     top = max(0, top)
     left = max(0, left)
 
+
     # Crop left image to isolate object
     # Crop right image to only incorporate possible matching features
     # (Images have already been rectified, so discard other y values)
@@ -93,7 +95,7 @@ def getBoxDistance(box, object_imgL, imgR):
     cropImgR = imgR[top:top+height, 0:imgR.shape[1]]
 
     # Gets the distance of the object using the disparity of only that object
-    distance = dis.disparity(cropImgL, cropImgR, f, B, 20, left)
+    distance = dis.disparity(cropImgL, cropImgR, f, B, 20, left, ext)
 
     return distance
     
@@ -125,7 +127,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = ""
+skip_forward_file_pattern = "1506943678.479497"
 
 
 ################################################################################
@@ -210,15 +212,15 @@ for filename_left in left_file_list:
 
         # OBJECT DETECTION CALCULATIONS
         # Perform edge enhancement on image by sharpening
-        #kernel = np.array([[-1,-1,-1], [-1,3,-1], [-1,-1,-1]])
-        #sharpened_imgL = cv2.filter2D(imgL, -5, kernel)
+        kernel = np.array([[-1,-1,-1], [-1,10,-1], [-1,-1,-1]])
+        enhanced_imgL = cv2.filter2D(imgL, -1, kernel)
 
 
         ################################################################################
         # YOLO Object Detection 
         ################################################################################
         # Gets the information about objects
-        classIDs, classes, confidences, boxes = yolo.yolo(imgL)
+        classIDs, classes, confidences, boxes = yolo.yolo(enhanced_imgL)
 
 
         ################################################################################

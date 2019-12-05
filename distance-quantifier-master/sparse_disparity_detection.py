@@ -57,7 +57,7 @@ matcher = cv2.FlannBasedMatcher(index_params,search_params)
 # B: camera baseline in metres (camera parameter)
 # increaseSize: size the area of the object has been increased (if image was too small)
 # left: corresponding x value in original image where object area starts
-def disparity(imgL, imgR, f, B, increaseSize, left):
+def disparity(imgL, imgR, f, B, increaseSize, left, ext):
     
     # detect the keypoints using ORB Detector, compute the descriptors
     kpL, desL = feature_object.detectAndCompute(imgL,None)
@@ -83,14 +83,16 @@ def disparity(imgL, imgR, f, B, increaseSize, left):
                 pt2 = kpR[m.trainIdx].pt  #coordinates of corresponding right image feature
                 if (pt1[1] == pt2[1]):
 
-                    # check the match is for the object in question
-                    if(pt1[0] > 20 and pt1[0] < imgL.shape[0] - 20 and
-                       pt1[1] > 20 and pt1[1] < imgL.shape[1] - 20):
+                    # check the match is for the object in question (and not extended region)
+                    if(ext == 0):
                         good_matches.append(m)
-                    
+                    else:
+                        if(pt1[0] > ext and pt1[0] < imgL.shape[1] - ext and
+                           pt1[1] > ext and pt1[1] < imgL.shape[0] - ext):
+                            good_matches.append(m)
     except ValueError:
-        print("caught error - no matches from current frame")
-
+        a = 2
+                    
     # draw matches onto images and display
     draw_params = dict(matchColor = (0,255,0), 
                         singlePointColor = (255,0,0), 
