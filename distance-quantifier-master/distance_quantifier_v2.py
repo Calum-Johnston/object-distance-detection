@@ -125,7 +125,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = "1506942604.475373"; 
+skip_forward_file_pattern = ""
 
 
 ################################################################################

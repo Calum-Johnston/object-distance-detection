@@ -69,11 +69,6 @@ def disparity(imgL, imgR):
     # N.B. need to do for both as both are 3-channel images
     grayL = cv2.cvtColor(imgL,cv2.COLOR_BGR2GRAY);
     grayR = cv2.cvtColor(imgR,cv2.COLOR_BGR2GRAY);
-
-    # perform preprocessing - raise to the power, as this subjectively appears
-    # to improve subsequent disparity calculation
-    grayL = np.power(grayL, 0.75).astype('uint8');
-    grayR = np.power(grayR, 0.75).astype('uint8');
     
     # use histogram equalisation to improve contrast
     grayL = clahe.apply(grayL)
@@ -95,7 +90,7 @@ def disparity(imgL, imgR):
 
     # Scale image to the full 0->255 range based on the number
     # of disparities in use for the stereo part
-    disparity_view = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
+    #disparity_view = (disparity_scaled * (256.0 / max_disparity)).astype(np.uint8)
     
     # return the image
     return disparity_scaled

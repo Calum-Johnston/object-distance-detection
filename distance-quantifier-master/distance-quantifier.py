@@ -28,7 +28,6 @@ import numpy as np
 import os
 import dense_disparity_detection as dis
 import yolo_detection as yolo
-from collections import Counter
 
 ################################################################################
 # === DRAWING + DISTANCE CALCULATION FUNCTIONS === #
@@ -104,6 +103,8 @@ def getBoxDistance(disparity_scaled, box):
     elif(min(width, height) < 50):
         centre_to_edge = int(min(width, height) / 4)
     elif(min(width, height) < 75):
+        centre_to_edge = int(min(width, height) / 6)
+    elif(min(width, height) < 100):
         centre_to_edge = int(min(width, height) / 8)
     elif(min(width, height) < 100):
         centre_to_edge = int(min(width, height) / 16)
@@ -178,7 +179,7 @@ left_file_list = sorted(os.listdir(full_path_directory_left));
 
 # set this to a file timestamp to start from (empty is first example - outside lab)
 # e.g. set to 1506943191.487683_L for the end of the Bailey, just as the vehicle turns
-skip_forward_file_pattern = "1506942604.475373"; 
+skip_forward_file_pattern =  ""
 
 
 ################################################################################
@@ -257,7 +258,7 @@ for filename_left in left_file_list:
         for box1 in boxes1:
             addBox = True
             for box in boxes:
-                if (box1[0] - 10 <= box[0] <= box1[0] + 10) and (box1[1] - 10 <= box[1] <= box1[1] + 10) and (box1[2] - 10 <= box[2] <= box1[2] + 10) and (box1[3] - 10 <= box[3] <= box1[3] + 10):
+                if (box1[0] - 40 <= box[0] <= box1[0] + 40) and (box1[1] - 40 <= box[1] <= box1[1] + 40) and (box1[2] - 40 <= box[2] <= box1[2] + 40) and (box1[3] - 40 <= box[3] <= box1[3] + 40):
                     addBox = False
                     break;
             if(addBox == True):
@@ -299,9 +300,9 @@ for filename_left in left_file_list:
         # stop the timer and convert to ms. (to see how long processing and display takes)
         stop_t = ((cv2.getTickCount() - start_t)/cv2.getTickFrequency()) * 1000
 
-        #Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
-        #label = 'Inference time: %.2f ms' % (stop_t)
-        #cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
+        Put efficiency information. The function getPerfProfile returns the overall time for inference(t) and the timings for each of the layers(in layersTimes)
+        label = 'Inference time: %.2f ms' % (stop_t)
+        cv2.putText(imgL, label, (0, 15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255))
 
         # print file names and minimum distance to standard output
         print(filename_left)
