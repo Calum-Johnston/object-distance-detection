@@ -30,6 +30,17 @@ import sparse_disparity_detection as dis
 import yolo_detection as yolo
 
 ################################################################################
+# Specify directories containing images & YOLO files here
+master_path_to_dataset = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "\z-resources\TTBB-durham-02-10-17-sub10";
+master_path_to_yolo_resources = os.path.dirname(os.path.realpath(__file__)) + "\yolo resources"; 
+
+
+
+
+
+
+
+################################################################################
 # === DRAWING + DISTANCE CALCULATION FUNCTIONS === #
 ################################################################################
 
@@ -113,8 +124,6 @@ def getBoxDistance(box, object_imgL, imgR):
 # Initialisation of dataset
 
 # where is the data?
-master_path_to_dataset = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + "\z-resources\TTBB-durham-02-10-17-sub10";
-master_path_to_yolo_resources = os.path.dirname(os.path.realpath(__file__)) + "\yolo resources"; 
 directory_to_cycle_left = "left-images";     
 directory_to_cycle_right = "right-images"; 
 
